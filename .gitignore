@@ -1,0 +1,37 @@
+# monogoDB 
+/data
+/data.*
+.DS_Store
+/dev-data
+/dev-data.*
+# python
+__pycache__/
+__pycache__/*
+!.__pycache__/*
+
+# environment
+*.env
+/env
+
+
+# simple test file
+test.py
+
+# vscode setting file
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# log file
+logs/
+logs/*
+/dev-logs
+/dev-logs.*
+
+# riot.txt
+web/
+web/static/
+web/static/riot.txt

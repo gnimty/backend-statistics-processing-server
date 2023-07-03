@@ -1,0 +1,10 @@
+flask
+pymongo
+python-dotenv
+pytest
+flask_api
+requests
+flask_request_validator
+apscheduler
+datetime
+redis
