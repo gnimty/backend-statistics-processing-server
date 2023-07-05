@@ -33,12 +33,14 @@ def error_handle(app):
 
     @app.errorhandler(KeyError)
     def handle_key_error(e):
+        traceback.print_exc()
         logger.error(e)
         return error_response(e, "서버 내부 오류가 발생했습니다.", "Key Error", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @app.errorhandler(TypeError)
     def handle_type_error(e):
         message = "서버 내부 오류가 발생했습니다."
+        traceback.print_exc()
         logger.error(e)
         return error_response(e, "서버 내부 오류가 발생했습니다.", "Type Error", status.HTTP_500_INTERNAL_SERVER_ERROR)
  

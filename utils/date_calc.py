@@ -1,5 +1,5 @@
 import datetime
-
+import time
 def lastModifiedFromNow(updated_at, utc=True):
   """현재 시간과 최종 수정일간의 날짜 차이를 계산\n
   [중요!!] UTC 시간을 기준으로 계산이 기본값
@@ -18,3 +18,11 @@ def lastModifiedFromNow(updated_at, utc=True):
     past_time = past_time-datetime.timedelta(hours=9)
 
   return past_time
+
+
+def timeStampToDateTime(timestamp):
+  return datetime.datetime.fromtimestamp(int(timestamp[:10]))
+  
+  
+# if __name__=="__main__":
+#   print(timeStampToDateTime("1687105442"))

@@ -29,13 +29,8 @@ def updateAll(db, limit):
   rank = 1 # 순위 정보 추가
   for entry in entries:
     entry["rank"] = rank
-    logger.info("%s 정보 업데이트 시작", entry["summonerName"])
     summoner.updateBySummonerBrief(db, entry, limit)
-    logger.info("%s 정보 업데이트 끝", entry["summonerName"])
     rank += 1
-
-  logger.info('--------- 마스터 이상 소환사 정보 insert ---------')
-  logger.info("총 소환사 수 : %s", len(entries))
 
   if len(entries) == 0:
     raise RequestDataNotExists("Riot Api 요청 정보가 존재하지 않습니다.")
