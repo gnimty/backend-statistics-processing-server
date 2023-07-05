@@ -1,48 +1,30 @@
 version: "3.8"
 services:
   # 배치서버
-  batch-server:
-    container_name: matches-collector
+  statistics-processing-server:
+    container_name: statistics-processing-server
     build:
-      # context : 도커파일 위치
-      # dockerfile : 도커파일 경로
       context: .
-      dockerfile: Dockerfile-batch
+      dockerfile: Dockerfile # dockerfile : 도커파일 경로
     restart: unless-stopped
     ports:
-      - 5001:5001
+      - 5001:5000
     depends_on:
       - mongodb
-    links:
-      - mongodb
     env_file:
-      - ./env/dev.env
-      - ./env/common.env
+      - env/dev.env
     environment:
       - TZ=Asia/Seoul
     volumes:  
       - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
   # 몽고DB
   mongodb:
-    image: mongo
+    image: mongo:6.0.4
     container_name: mongodb
     restart: always
     ports:
       - 27018:27017
     volumes:  
       - ./dev-data:/data/db # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=1234 
-      - MONGO_INITDB_DATABASE=LEAGUEDATA
-
-  # Redis
-  cachedb:
-    image: redis
-    container_name: cachedb
-    labels:
-        - "name=redis"
-        - "mode=standalone"
-    command: redis-server --port 6379
-    ports:
-      - 6378:6379
+    env_file:
+      - env/dev.mongo.env

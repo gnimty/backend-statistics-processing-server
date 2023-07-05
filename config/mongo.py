@@ -1,7 +1,10 @@
 from pymongo import MongoClient,  IndexModel, ASCENDING, DESCENDING
+import logging
+logger = logging.getLogger("app")  # 로거
 
 def mongoClient(app, db):
   mongoClient = MongoClient(app.config["MONGO_URI"])
+  
   if db == app.config.get("MONGO_RIOTDATA_DB"):
     init_index(mongoClient[db])
   
@@ -38,12 +41,12 @@ def init_index(db):
     ("teamId", ASCENDING),
   ],name = "teams_index")
   
-  timelines_index = IndexModel([
-    ("matchId", DESCENDING),
-    ("puuid", ASCENDING),
-    ("teamId", ASCENDING),
-    ("participantId", ASCENDING),
-  ],name = "timelines_index")
+  # timelines_index = IndexModel([
+  #   ("matchId", DESCENDING),
+  #   ("puuid", ASCENDING),
+  #   ("teamId", ASCENDING),
+  #   ("participantId", ASCENDING),
+  # ],name = "timelines_index")
   
   champion_statics_lane_index = IndexModel([
     ("championName", ASCENDING),
@@ -65,4 +68,4 @@ def init_index(db):
   db.champion_statics_lane.create_indexes([champion_statics_lane_index])
   db.champion_statics.create_indexes([champion_statics_index])
   db.teams.create_indexes([teams_index])
-  db.timelines.create_indexes([timelines_index])
+  # db.timelines.create_indexes([timelines_index])

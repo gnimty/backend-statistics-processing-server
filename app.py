@@ -1,21 +1,28 @@
 import json
 from bson import json_util
 from scheduler import start_schedule  # 스케줄러 로드
-from config.config import config  # 최초 환경변수 파일 로드
+
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
 from flask_request_validator import *  # parameter validate
-import logging
-import utils.initialize_logger  # 로거 최초 동작
 from flask import Flask, jsonify, request, url_for
 import os, dotenv
 from config.mongo import mongoClient
 from utils.summoner_name import makeInternalName
 
 from scheduler import start_schedule
-dotenv.load_dotenv()
+
+env = os.getenv("APP_ENV") or "local"
+
+if env == "local":
+  dotenv.load_dotenv(dotenv_path="./env/.env")
+from config.config import config  # 최초 환경변수 파일 로드
+import logging
 
 app = Flask(__name__)
+app.config.from_object(config[env])  # 기본 앱 환경 가져오기
+logger.info("PORT : %s", os.environ.get("FLASK_RUN_PORT"))
+
 
 log_dir = './logs'  # 로그 남길 디렉토리 (없으면 자동으로 생성)
 if not os.path.exists(log_dir):
@@ -24,9 +31,9 @@ from utils import initialize_logger
 
 logger = logging.getLogger("app")  # 로거
 
-app.config.from_object(config[os.getenv("APP_ENV") or "local"])  # 기본 앱 환경 가져오기
-
 error_handle(app)  # app 공통 에러 핸들러 추가
+
+logger.info("%s 환경에서 실행",env)
 
 # Mongo Connection
 db_riot = mongoClient(app, app.config["MONGO_RIOTDATA_DB"])  # pymongo connection
@@ -62,29 +69,41 @@ def matchBatch():  # 전적정보 배치 수행
   """
 
   # 1. league_entries 가져오기
-  summonerIds = summoner.findAllSummonerId(db_riot)
+  puuids = summoner.findAllSummonerPuuid(db_riot)
   # 2. league_entries 안의 소환사 아이디를 돌아가면서 summoner_matches를 업데이트하기
-  for summonerId in [d['summonerId'] for d in summonerIds if 'summonerId' in d]:
+  for puuid in puuids:
     
-    matchIds = summoner_matches.findRecentMatchIds(
-      db_riot, summoner_matches.update(db_riot, summonerId=summonerId), 
-      no_limit=True)
-
+    matchIds = summoner_matches.updateAndGetTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
     for matchId in matchIds:
-      match.findOrUpdate(db_riot, matchId)
+      match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
 
   return {"status": "ok", "message": "전적 정보 배치가 완료되었습니다."}
 
+@app.route('/scheduler/summoner/start')
+def startSummonerBatchScheduler():
+  start_schedule([
+  # 2시간에 한번씩 소환사 정보 배치
+  {
+    "job":leagueEntriesBatch,
+    "method":"interval",
+    "time": {
+      "hours": app.config["SUMMONER_BATCH_HOUR"]
+    }
+  },
+  ])
+  return {"message":"scheduler started"}
 
 
-start_schedule([
-  # 2분에 한번씩 Rate Limit 100으로 초기화  
-  # {
-  #   "job":setRateLimit,
-  #   "method":"interval",
-  #   "time":2
-  # },
-])
+# start_schedule([
+#   # 2시간에 한번씩 소환사 정보 배치
+#   {
+#     "job":leagueEntriesBatch,
+#     "method":"cron",
+#     "time":{
+#       "minute":1
+#     }
+#   },
+# ])
 #   # 4시 정각에 돌아가도록 설정
 #   {
 #     "job":matchBatch,
@@ -95,3 +114,8 @@ start_schedule([
 #   }
 #   ])
 
+# if __name__ == "__main__":
+#   app.run(
+#     host = app.config["FLASK_HOST"], 
+#     port=app.config["FLASK_PORT"],
+#     debug=app.config["FLASK_DEBUG"])

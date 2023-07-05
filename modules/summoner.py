@@ -1,20 +1,36 @@
 from riot_requests import summoner_v4
-from error.custom_exception import TooManySummonerRequest, DataNotExists
-import datetime
+from error.custom_exception import DataNotExists
+from datetime import datetime, timedelta
 import logging
 from utils.date_calc import lastModifiedFromNow
-from modules import league_entries
 from utils.summoner_name import makeInternalName
+
 
 logger = logging.getLogger("app")
 col = "summoners"
 
-def findAllSummonerId(db):
-  summonerIds = list(db[col].find({}, {"_id":0, "summonerId":1}))
+division = {
+  "I":1,
+  "II":2,
+  "III":3,
+  "IV":4
+}
+
+# def findAllSummonerId(db):
+#   summonerIds = list(db[col].find({}, {"_id":0, "summonerId":1}))
   
-  if len(summonerIds) == 0:
+#   if len(summonerIds) == 0:
+#     raise DataNotExists("데이터베이스에서 소환사 정보를 찾을 수 없습니다.")
+#   return summonerIds
+
+def findAllSummonerPuuid(db):
+  puuids = list(db[col].find({}, {"_id":0, "puuid":1}))
+  
+  if len(puuids) == 0:
     raise DataNotExists("데이터베이스에서 소환사 정보를 찾을 수 없습니다.")
-  return summonerIds
+  
+  return [s['puuid'] for s in puuids if 'puuid' in s]
+
 
 def findBySummonerId(db, summonerId):
   """소환사 ID로 소환사 정보 조회
@@ -34,7 +50,7 @@ def findBySummonerId(db, summonerId):
     logger.info("소환사 정보가 존재하지 않습니다.")
     return None
 
-  summoner["updatedAt"] = summoner["updatedAt"]+datetime.timedelta(hours=9)
+  # summoner["updatedAt"] = summoner["updatedAt"]+timedelta(hours=9)
   return summoner
 
 def updateBySummonerName(db, summonerName, limit):
@@ -66,12 +82,7 @@ def updateBySummonerBrief(db, summoner_brief, limit):
       db,
       findBySummonerId(db, summoner_brief["summonerId"]) or
       summoner_v4.requestSummonerById(summoner_brief["summonerId"], limit), summoner_brief)
-
-  logger.info("소환사 %s의 정보를 성공적으로 업데이트했습니다.", summoner["name"])
-
-  summoner["updatedAt"] = summoner["updatedAt"]+datetime.timedelta(hours=9)
-  return summoner
-
+  # summoner["updatedAt"] = summoner["updatedAt"]+datetime.timedelta(hours=9)
 
 
 def findBySummonerName(db, summonerName):
@@ -91,23 +102,8 @@ def findBySummonerName(db, summonerName):
   if not summoner:
     return None
 
-  summoner["updatedAt"] = summoner["updatedAt"]+datetime.timedelta(hours=9)
+  # summoner["updatedAt"] = summoner["updatedAt"]+datetime.timedelta(hours=9)
   return summoner
-
-
-
-# startWith 전략으로 찾기
-def findByInternalName(db, internal_name):
-  summoners = list(db[col].find(
-    {"internal_name":{"$regex":f"^{internal_name}"}},
-    {"_id": 0, "accountId": 0}).limit(4))
-  
-  if len(summoners) == 0:
-    return []
-  
-  return summoners
-  
-
 
 
 def updateSummoner(db, summoner, summoner_brief):
@@ -117,11 +113,13 @@ def updateSummoner(db, summoner, summoner_brief):
       summoner: 현재 정보
       summoner_brief: 조회한 최신 entry 정보
   """
-  summoner["updatedAt"] = datetime.datetime.utcnow()
+  summoner_brief["tier"] = division[summoner_brief["tier"]]
+  summoner["updatedAt"] = datetime.now()
   summoner["queue"] = summoner_brief["queue"]
   summoner["tier"] = summoner_brief["tier"]
-  
-  del summoner["rank"] # 랭크 정보 삭제
+  summoner["leaguePoints"] = summoner_brief["leaguePoints"]
+  if "rank" in summoner:
+    del summoner["rank"] # 랭크 정보 삭제
   
   summoner["internal_name"] = makeInternalName(summoner_brief["summonerName"])
   
@@ -131,7 +129,7 @@ def updateSummoner(db, summoner, summoner_brief):
       "queue":summoner_brief["queue"],
       "tier":summoner_brief["tier"],
       "leaguePoints":summoner_brief["leaguePoints"],
-      "last":summoner["updatedAt"],
+      "updatedAt":summoner["updatedAt"]
     }]
   else:
     # history 맨 처음에 insert
@@ -139,7 +137,7 @@ def updateSummoner(db, summoner, summoner_brief):
       "queue":summoner_brief["queue"],
       "tier":summoner_brief["tier"],
       "leaguePoints":summoner_brief["leaguePoints"],
-      "last":summoner["updatedAt"],
+      "updatedAt":summoner["updatedAt"],
     })
     
   db[col].update_one(
@@ -148,3 +146,23 @@ def updateSummoner(db, summoner, summoner_brief):
       True)
   return summoner
   
+
+def findSummonerHistory(db, puuid, stdDate):
+  summoner = db[col].find_one({"puuid":puuid})
+  
+  if not summoner or "history" not in summoner:
+    return {
+        "queue":"null",
+        "tier":"null",
+        "leaguePoints":"null"
+      }
+  
+  for h in summoner["history"]:
+    # 히스토리 날짜와 매치 날짜 비교 후 매치 날짜가 히스토리 날짜보다 최신이면 다음 히스토리 탐색
+    # 그렇지 않으면 현재 탐색한 히스토리 이전 데이터를 티어 정보로 산정
+    # 만약 전부 탐색해도 결과가 나오지 않으면 가장 오래된 history를 티어 정보로 산정
+    temp_history = h
+    if stdDate >= h["updatedAt"]:
+      break
+  
+  return temp_history
