@@ -59,8 +59,12 @@ def updateMatch(db, raw_db, matchId, limit: int):
       "gameStartAt": date_calc.timeStampToDateTime(str(info["gameStartTimestamp"])),
       "gameDuration": int(info["gameDuration"]),
       "queueId": int(info["queueId"]),
-      "gameEndAt": date_calc.timeStampToDateTime(str(info["gameEndTimestamp"])),
-      "version": shortGameVersion(info["gameVersion"])
+      "gameEndAt": # gameEndTimestamp가 필드정보에서 누락되는 현상 확인, gameStartAt + gameDuration 값으로 환산
+        date_calc.timeStampToDateTime(str(info["gameEndTimestamp"])) 
+        if "gameEndTimestamp" in info 
+        else date_calc.timeStampToDateTime(str(info["gameStartTimestamp"] + 1000*info["gameDuration"])) ,
+      "version": shortGameVersion(info["gameVersion"]),
+      "earlyEnded": False
     }
     
     for team in info["teams"]:
@@ -102,6 +106,10 @@ def updateMatch(db, raw_db, matchId, limit: int):
           killParticipation = 0
         else:
           killParticipation = round(((participant["kills"]+participant["assists"])/ total_team_kills), 2)
+      
+      # 게임 조기 종료
+      if "gameEndedInEarlySurrender" in info:
+        match["earlyEnded"] = True
       
       # 승리 여부
       if win_team_id == participant["teamId"]:
