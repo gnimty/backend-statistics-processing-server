@@ -78,7 +78,7 @@ def updateBySummonerName(db, summonerName, limit):
 
 
 def updateBySummonerBrief(db, summoner_brief, limit):
-  summoner = updateSummoner(
+  updateSummoner(
       db,
       findBySummonerId(db, summoner_brief["summonerId"]) or
       summoner_v4.requestSummonerById(summoner_brief["summonerId"], limit), summoner_brief)
@@ -113,6 +113,10 @@ def updateSummoner(db, summoner, summoner_brief):
       summoner: 현재 정보
       summoner_brief: 조회한 최신 entry 정보
   """
+  
+  if not summoner:
+    return None
+  
   summoner_brief["tier"] = division[summoner_brief["tier"]]
   summoner["updatedAt"] = datetime.now()
   summoner["queue"] = summoner_brief["queue"]

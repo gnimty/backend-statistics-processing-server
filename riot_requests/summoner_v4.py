@@ -66,7 +66,7 @@ def requestSummoner(limit, summonerName=None, summonerId=None):
   result = delayableRequest(url, 20, limit)
   
   if "id" not in result:
-    raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
+    return None
   
   del(result["accountId"]) # 필요 없는 properties 제거
   
