@@ -44,7 +44,9 @@ def updateMatch(db, raw_db, matchId, limit: int):
     
     # 코드 수정 : result와 result_timeline 둘 중 하나도 존재하지 않으면 return none
     if result.get("status") or result_timeline.get("status"):
-      return
+      raise custom_exception.CustomUserError(
+        "매치정보를 가져오는 데 실패했습니다.", 
+        "Result of request to Riot not exists", status.HTTP_404_NOT_FOUND )
     
     info = result["info"]
     info_teams = []
