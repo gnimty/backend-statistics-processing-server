@@ -75,7 +75,11 @@ def matchBatch():  # 전적정보 배치 수행
     
     matchIds = summoner_matches.updateAndGetTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
     for matchId in matchIds:
-      match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
+      try:
+        
+        match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
+      except Exception:
+        logger.error("matchId = {}에 해당하는 전적 정보를 불러오는 데 실패했습니다.")
 
   return {"status": "ok", "message": "전적 정보 배치가 완료되었습니다."}
 
