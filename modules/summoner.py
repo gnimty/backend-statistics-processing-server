@@ -125,7 +125,8 @@ def updateSummoner(db, summoner, summoner_brief):
   if "rank" in summoner:
     del summoner["rank"] # 랭크 정보 삭제
   
-  summoner["internal_name"] = makeInternalName(summoner_brief["summonerName"])
+  summoner["name"] = summoner_brief["summonerName"]
+  summoner["internal_name"] = makeInternalName(summoner["name"])
   
   # history list 존재하면 갖다 붙이고 없으면 새로 생성
   if not summoner.get("history"):
