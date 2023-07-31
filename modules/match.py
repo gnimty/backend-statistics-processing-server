@@ -154,7 +154,8 @@ def updateMatch(db, raw_db, matchId, limit: int):
         "item4":participant["item4"],
         "item5":participant["item5"],
         "item6":participant["item6"],
-        # 필드 두개 추가
+        "spellDId":participant["summoner1Id"],
+        "spellFId":participant["summoner2Id"],
         "win":win,
         "gameDuration": info["gameDuration"],
       })
