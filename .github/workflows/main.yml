@@ -68,7 +68,6 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ${{ secrets.DIR }}
-            sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
             sudo echo "${{ secrets.DEV_ENV }}" > .env
             sudo echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
             sudo docker-compose -f docker-compose-dev.yml down -v
