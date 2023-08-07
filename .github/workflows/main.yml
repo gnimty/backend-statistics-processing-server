@@ -13,7 +13,7 @@ jobs:
         with:
           host: ${{ secrets.DEV_HOST }}
           username: ${{ secrets.DEV_USER }}
-          key: ${{ secrets.DEV_SSHKEY }}
+          key: ${{ secrets.DEV_SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: pwd
       # ## dev.env 파일 생성
