@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 python:3.8-slim-buster
+FROM python:3.10.9
 
 COPY . /app
 
@@ -10,4 +10,4 @@ RUN pip install -r requirements.txt
 
 EXPOSE 5000
 
-CMD ["python", "-m", "app"]
+CMD ["python", "app.py"]
