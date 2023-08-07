@@ -12,8 +12,8 @@ services:
       - 5000:5000
     depends_on:
       - mongodb
-    env_file:
-      - env/dev.env
+    # env_file:
+    #   - env/dev.env
     environment:
       - TZ=Asia/Seoul
     volumes:  
@@ -24,8 +24,8 @@ services:
     container_name: mongodb
     restart: always
     ports:
-      - 27018:27017
+      - 27017:27017
     volumes:  
       - ./dev-data:/data/db # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
     env_file:
-      - env/dev.mongo.env
+      - mongo.env
