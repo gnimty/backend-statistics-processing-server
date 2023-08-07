@@ -1,4 +1,4 @@
-FROM python:3.9.17-slim@sha256:624ca123d5e35b2662282dde1e736404bf8fed72125745260f7a4dbb0b860a63
+FROM python:latest@sha256:0a43b1c192c964971508b745ce5dabb8a5e6cbe6ec4b9d6847092e3336b10b35
 
 COPY . /app
 
