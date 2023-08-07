@@ -1,4 +1,4 @@
-FROM python:3.9-slim as base
+FROM arm64v8/python:3.10-alpine
 
 COPY . /app
 
