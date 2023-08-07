@@ -23,7 +23,8 @@ jobs:
         # 우선은 dev와 prod를 별개의 docker repository로 설정하기
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -f Dockerfile -t ${{ secrets.DEV_DOCKER_REPO }} .
+          docker buildx create --use
+          docker buildx build --platform linux/arm64/v8 -t ${{ secrets.DEV_DOCKER_REPO }} . 
           docker push ${{ secrets.DEV_DOCKER_REPO }}
      
       
