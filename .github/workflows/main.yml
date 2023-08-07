@@ -31,7 +31,7 @@ jobs:
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker build -f Dockerfile -t ${{ secrets.DEV_DOCKER_REPO }} .
-          docker push ${{ secrets.DOCKER_REPO }}
+          docker push ${{ secrets.DEV_DOCKER_REPO }}
 
      #  ## gradle build
      #  - name: Build with Gradle
