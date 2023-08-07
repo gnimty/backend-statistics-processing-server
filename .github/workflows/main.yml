@@ -38,7 +38,7 @@ jobs:
           source: docker-compose-dev.yml
           target: "/home/${{ secrets.DEV_USER }}/${{ secrets.DIR }}"
 
-      - name: Docker 이미지 pull, 이후 구동
+      - name: Docker 이미지 pull 이후 down/up
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.DEV_HOST }}
