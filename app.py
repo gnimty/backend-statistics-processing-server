@@ -12,7 +12,7 @@ from utils.summoner_name import makeInternalName
 
 from scheduler import start_schedule
 
-dotenv.load_dotenv()
+# dotenv.load_dotenv(dotenv_path=".env")
 env = os.getenv("APP_ENV") or "local"
 from config.config import config  # 최초 환경변수 파일 로드
 import logging
