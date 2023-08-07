@@ -16,12 +16,13 @@ jobs:
           key: ${{ secrets.DEV_SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: pwd
-      # ## dev.env 파일 생성
-      # - uses: actions/checkout@v3
-      # - run: pwd
-      # - run: touch ./src/main/resources/application.yml
-      # - run: echo "${{ secrets.DEV_ENV }}" > ./src/main/resources/application.yml
-      # - run: cat ./src/main/resources/application.yml
+          
+      ## dev.env 파일 생성
+      - uses: actions/checkout@v3
+      - run: cd dev-statistics-server
+      - run: touch env
+      - run: echo "${{ secrets.DEV_ENV }}" > .env
+      - run: cat .env
         
      #  ## gradle build
      #  - name: Build with Gradle
