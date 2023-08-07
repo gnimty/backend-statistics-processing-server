@@ -17,8 +17,10 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           
       ## dev.env 파일 생성
+      
+      - uses: actions/checkout@v3
+
       - name: dev.env create
-        uses: actions/checkout@v3
         run: |
           touch env
           echo "${{ secrets.DEV_ENV }}" > .env
