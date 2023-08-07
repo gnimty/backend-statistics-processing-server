@@ -39,6 +39,8 @@ jobs:
           target: "/home/${{ secrets.DEV_USER }}/${{ secrets.DIR }}"
           script: |
             sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            echo "${{ secrets.DEV_ENV }}" > .env
+            echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
             sudo docker-compose -f docker-compose-dev.yml down -v
             sudo docker-compose -f docker-compose-dev.yml pull
             sudo docker-compose -f docker-compose-dev.yml up -d
