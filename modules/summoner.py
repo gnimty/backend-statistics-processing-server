@@ -157,9 +157,9 @@ def findSummonerHistory(db, puuid, stdDate):
   
   if not summoner or "history" not in summoner:
     return {
-        "queue":"null",
-        "tier":"null",
-        "leaguePoints":"null"
+        "queue":None,
+        "tier":None,
+        "leaguePoints":None
       }
   
   for h in summoner["history"]:
