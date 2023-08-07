@@ -11,11 +11,12 @@ jobs:
       - name: repository 내용 가져오기
         uses: actions/checkout@master
 
-      - name: 환경변수 생성
+      - name: ENV, MONGO_ENV 환경변수 생성
         run: |
           touch env
           echo "${{ secrets.DEV_ENV }}" > .env
-          cat .env
+          touch mongo.env
+          echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
        
       - name: 도커 이미지 빌드
         # if: contains(github.ref, 'main')
