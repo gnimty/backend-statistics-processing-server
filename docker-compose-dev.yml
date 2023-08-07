@@ -12,8 +12,8 @@ services:
       - 5000:5000
     depends_on:
       - mongodb
-    # env_file:
-    #   - env/dev.env
+    env_file:
+      - .env
     environment:
       - TZ=Asia/Seoul
     volumes:  
