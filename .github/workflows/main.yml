@@ -18,7 +18,6 @@ jobs:
           script: pwd
           
       ## dev.env 파일 생성
-      - name:
       - uses: actions/checkout@v3
       - run: touch env
       - run: echo "${{ secrets.DEV_ENV }}" > .env
