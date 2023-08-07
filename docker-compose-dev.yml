@@ -2,11 +2,11 @@ version: "3.8"
 services:
   # 배치서버
   statistics-processing-server:
-    image: solmin2/statistics-processing-server:latest
+    # image: solmin2/statistics-processing-server:latest
     container_name: statistics-processing-server
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile # dockerfile : 도커파일 경로
+    build:
+      context: .
+      dockerfile: Dockerfile # dockerfile : 도커파일 경로
     restart: unless-stopped
     ports:
       - 5000:5000

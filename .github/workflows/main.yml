@@ -26,13 +26,13 @@ jobs:
           touch mongo.env
           echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
        
-      - name: Docker 이미지 빌드
-        # if: contains(github.ref, 'main')
-        # 우선은 dev와 prod를 별개의 docker repository로 설정하기
-        run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker buildx create --use
-          docker buildx build --platform linux/arm64/v8 -t solmin2/statistics-processing-server:latest --push . 
+      # - name: Docker 이미지 빌드
+      #   # if: contains(github.ref, 'main')
+      #   # 우선은 dev와 prod를 별개의 docker repository로 설정하기
+      #   run: |
+      #     docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      #     docker buildx create --use
+      #     docker buildx build --platform linux/arm64/v8 -t solmin2/statistics-processing-server:latest --push . 
 
      
       
@@ -45,6 +45,16 @@ jobs:
           key: ${{ secrets.DEV_SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           source: docker-compose-dev.yml
+          target: "/home/${{ secrets.DEV_USER }}/${{ secrets.DIR }}"
+
+      - name: Dockerfkle 파일 이동
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.DEV_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: Dockerfile
           target: "/home/${{ secrets.DEV_USER }}/${{ secrets.DIR }}"
 
       - name: Docker 이미지 pull 이후 down/up
