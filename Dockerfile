@@ -8,6 +8,6 @@ WORKDIR /app
 
 RUN pip install -r requirements.txt
 
-EXPOSE ${FLASK_RUN_PORT}
+EXPOSE 5000
 
 CMD ["flask", "run"]

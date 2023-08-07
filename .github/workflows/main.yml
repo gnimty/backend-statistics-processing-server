@@ -8,7 +8,7 @@ jobs:
   build: 
     runs-on: ubuntu-latest
     steps:
-      - name: SSH Remote Commands
+      - name: ssh 접속 테스트
         uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.DEV_HOST }}
@@ -16,27 +16,28 @@ jobs:
           key: ${{ secrets.DEV_SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           
-      ## dev.env 파일 생성
-      
-      - uses: actions/checkout@v3
+      - name: repository 내용 가져오기
+        uses: actions/checkout@v3
 
-      - name: dev.env create
+      - name: 환경변수 생성
         run: |
           touch env
           echo "${{ secrets.DEV_ENV }}" > .env
           cat .env
-        
+       
+      - name: 도커 이미지 빌드
+        # if: contains(github.ref, 'main')
+        # 우선은 dev와 prod를 별개의 docker repository로 설정하기
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -f Dockerfile -t ${{ secrets.DOCKER_REPO }} .
+          docker push ${{ secrets.DOCKER_REPO }}
+          
      #  ## gradle build
      #  - name: Build with Gradle
      #    run: ./gradlew build -x test
         
-     #  ## docker build & push to production
-     #  - name: Docker build & push to prod
-     #    if: contains(github.ref, 'main')
-     #    run: |
-     #      docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-     #      docker build -f Dockerfile -t ${{ secrets.DOCKER_REPO }} .
-     #      docker push ${{ secrets.DOCKER_REPO }}
+     
       
      #  ## docker-compose.yml 서버에 이동
      #  - uses: actions/checkout@master
