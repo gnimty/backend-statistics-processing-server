@@ -39,13 +39,14 @@ jobs:
           target: "/home/${{ secrets.DEV_USER }}/${{ secrets.DIR }}"
 
       - name: Docker 이미지 pull, 이후 구동
-        uses: appleboy/ssh-action@v0.1.9
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.DEV_HOST }}
           username: ${{ secrets.DEV_USER }}
           key: ${{ secrets.DEV_SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            cd ${{ secrets.DIR }}
             sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
             sudo echo "${{ secrets.DEV_ENV }}" > .env
             sudo echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
