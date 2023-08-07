@@ -24,8 +24,9 @@ jobs:
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker buildx create --use
-          docker buildx build --platform linux/arm64/v8 -t ${{ secrets.DEV_DOCKER_REPO }} . 
-          docker push ${{ secrets.DEV_DOCKER_REPO }}
+          docker buildx build --platform linux/arm64/v8 -t solmin2/statistics-processing-server:latest . 
+          docker push solmin2/statistics-processing-server:latest
+
      
       
       ## docker-compose.yml 서버에 이동
