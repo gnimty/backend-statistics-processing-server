@@ -19,11 +19,10 @@ jobs:
           
       ## dev.env 파일 생성
       - name:
-        uses: actions/checkout@v3
-        run: |
-          touch env 
-          echo "${{ secrets.DEV_ENV }}" > .env
-          cat .env
+      - uses: actions/checkout@v3
+      - run: touch env
+      - run: echo "${{ secrets.DEV_ENV }}" > .env
+      - run: cat .env
         
       ## docker build & push to production
       # - name: Docker Image
