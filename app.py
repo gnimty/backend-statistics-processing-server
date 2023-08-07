@@ -12,17 +12,13 @@ from utils.summoner_name import makeInternalName
 
 from scheduler import start_schedule
 
+dotenv.load_dotenv()
 env = os.getenv("APP_ENV") or "local"
-
-if env == "local":
-  dotenv.load_dotenv(dotenv_path="./env/.env")
 from config.config import config  # 최초 환경변수 파일 로드
 import logging
 
 app = Flask(__name__)
 app.config.from_object(config[env])  # 기본 앱 환경 가져오기
-logger.info("PORT : %s", os.environ.get("FLASK_RUN_PORT"))
-
 
 log_dir = './logs'  # 로그 남길 디렉토리 (없으면 자동으로 생성)
 if not os.path.exists(log_dir):
@@ -118,8 +114,8 @@ def startSummonerBatchScheduler():
 #   }
 #   ])
 
-# if __name__ == "__main__":
-#   app.run(
-#     host = app.config["FLASK_HOST"], 
-#     port=app.config["FLASK_PORT"],
-#     debug=app.config["FLASK_DEBUG"])
+if __name__ == "__main__":
+  app.run(
+    host = app.config["FLASK_HOST"], 
+    port=app.config["FLASK_PORT"],
+    debug=bool(int(app.config["FLASK_DEBUG"])))
