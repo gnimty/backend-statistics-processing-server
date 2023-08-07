@@ -2,7 +2,7 @@ version: "3.8"
 services:
   # 배치서버
   statistics-processing-server:
-    image: solmin2/statistics-processing-server
+    image: solmin2/statistics-processing-server:latest
     container_name: statistics-processing-server
     # build:
     #   context: .
