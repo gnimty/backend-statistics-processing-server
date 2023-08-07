@@ -43,10 +43,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       
       - name: Build and push
-         uses: docker/build-push-action@v3
-         with:
-           push: true
-           tags: solmin2/statistics-processing-server:latest
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: solmin2/statistics-processing-server:latest
 
       ## docker-compose.yml 서버에 이동
       - name: docker-compose.yml 파일 이동
