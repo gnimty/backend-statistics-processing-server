@@ -1,6 +1,8 @@
-FROM arm64v8/python:3.10-alpine
+FROM python:3.10.9-slim
 
 COPY . /app
+
+RUN pip install --upgrade pip
 
 WORKDIR /app
 
