@@ -35,8 +35,8 @@ def updateAll(db, limit):
   if len(entries) == 0:
     raise RequestDataNotExists("Riot Api 요청 정보가 존재하지 않습니다.")
 
-  db[col].delete_many({}) # db에 넣기 전 league_entires collection 비우기
-  db[col].insert_many(entries, ordered=True)
+  # db[col].delete_many({}) # db에 넣기 전 league_entires collection 비우기
+  # db[col].insert_many(entries, ordered=True)
 
   logger.info("성공적으로 %s명의 엔트리 정보를 업데이트했습니다.", len(entries))
   return len(entries)

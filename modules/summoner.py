@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import logging
 from utils.date_calc import lastModifiedFromNow
 from utils.summoner_name import makeInternalName
-
+from modules.TierDivisionMMR import MMR
 
 logger = logging.getLogger("app")
 col = "summoners"
@@ -122,11 +122,14 @@ def updateSummoner(db, summoner, summoner_brief):
   summoner["queue"] = summoner_brief["queue"]
   summoner["tier"] = summoner_brief["tier"]
   summoner["leaguePoints"] = summoner_brief["leaguePoints"]
+  summoner["wins"] = summoner_brief["wins"] 
+  summoner["losses"] = summoner_brief["losses"] 
   if "rank" in summoner:
     del summoner["rank"] # 랭크 정보 삭제
   
   summoner["name"] = summoner_brief["summonerName"]
   summoner["internal_name"] = makeInternalName(summoner["name"])
+  summoner["mmr"] = MMR[summoner["queue"]].value + int(summoner["leaguePoints"])
   
   # history list 존재하면 갖다 붙이고 없으면 새로 생성
   if not summoner.get("history"):
@@ -171,3 +174,14 @@ def findSummonerHistory(db, puuid, stdDate):
       break
   
   return temp_history
+
+def mmrFix(db):
+  summoners  = db[col].find({})
+  for summoner in summoners:
+    summoner["mmr"] = MMR[summoner["queue"]].value + int(summoner["leaguePoints"])
+    db[col].update_one(
+      {"puuid": summoner["puuid"]},
+      {"$set": summoner},
+      True)
+    
+  
