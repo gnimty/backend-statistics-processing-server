@@ -93,6 +93,10 @@ def startSummonerBatchScheduler():
   ])
   return {"message":"scheduler started"}
 
+@app.route('/test/mmr')
+def mmrColumnFix():
+  summoner.mmrFix(db_riot)
+  return {"message":"complete"}
 
 # start_schedule([
 #   # 2시간에 한번씩 소환사 정보 배치
