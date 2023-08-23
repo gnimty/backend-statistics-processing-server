@@ -12,6 +12,7 @@ from modules.summoner import findSummonerHistory
 # 우선은 직접 제거
 
 logger = logging.getLogger("app")
+col = "matches"
 
 def updateMatch(db, raw_db, matchId, limit: int):
   """
@@ -74,6 +75,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
         "baron":team["objectives"]["baron"]["kills"],
         "dragon":team["objectives"]["dragon"]["kills"],
         "tower":team["objectives"]["tower"]["kills"],
+        "riftHerald":team["objectives"]["riftHerald"]["kills"],
         "totalKills":team["objectives"]["champion"]["kills"],
       })
     
@@ -207,3 +209,53 @@ def updateMatch(db, raw_db, matchId, limit: int):
     
 def shortGameVersion(version):
   return ".".join(version.split(".")[:2])
+
+def findAllMatchIds(db):
+  return list(db[col].find({}, {"_id":0, "matchId":1}))
+  
+def updateParticipantSpells(db, limit):
+  
+  for matchId in [item["matchId"] for item in findAllMatchIds(db)]:
+    try:
+      result = match_v4.getMatch(matchId, limit)["result"]
+      
+      origin_participants = db["participants"].find({"matchId":matchId})
+      origin_teams = list(db["teams"].find({"matchId":matchId}).sort("teamId"))
+      
+      new_participants = [{"participantId":p["participantId"], "spellDId":p["summoner1Id"], "spellFId":p["summoner2Id"]} for p in result["info"]["participants"]]
+      new_teams = {item["teamId"]: item["objectives"]["riftHerald"]["kills"] for item in result["info"]["teams"]}
+      
+      
+      origin_participants_dict = {item["participantId"]: item for item in origin_participants}
+      new_participants_dict = {item["participantId"]: item for item in new_participants}
+
+      # 1. participant spell 정보 업데이트
+      
+      for id_value in set(origin_participants_dict.keys()):
+        merged_dict = {}
+        merged_dict.update(origin_participants_dict[id_value])
+        merged_dict.update(new_participants_dict[id_value])
+        db["participants"].update_one(
+            {"matchId": matchId,
+             "participantId": merged_dict["participantId"]},
+            {"$set": merged_dict}, True)
+
+      # 2. team riftHerald 정보 업데이트
+
+      # teamId: 100
+      origin_teams[0].update({"riftHerald": new_teams[100]})
+      # teamId: 200
+      origin_teams[1].update({"riftHerald": new_teams[200]})
+
+      db["teams"].update_one(
+          {"matchId": matchId, "teamId": 100},
+          {"$set": origin_teams[0]}, True)
+
+      db["teams"].update_one(
+          {"matchId": matchId, "teamId": 200},
+          {"$set": origin_teams[1]}, True)
+    
+    except Exception:
+        logger.error("matchId = {} 에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
+      
+    
