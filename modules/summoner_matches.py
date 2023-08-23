@@ -1,6 +1,6 @@
 from riot_requests import match_v4
 from error.custom_exception import *
-
+from modules.summoner import findBySummonerPuuid
 col = "summoner_matches"
 
 def updateAndGetTotalMatchIds(db, limit: int, puuid):
@@ -28,15 +28,18 @@ def updateAndGetTotalMatchIds(db, limit: int, puuid):
   # 다음 페이지 조회 시 이용하는 변수
   start_index=100
   
-  # FIXME - 버그 발생지점 (startIdx=3000000 이상으로 넘어감)
   if old_matches:
     latest_match_id = old_matches["summoner_match_ids"][0]
     
     # API로 최근 전적 가져온 후 그 안에 latest_match_id가 존재하면 db와 sync가 맞음
     # 그렇지 않으면 계속 가져와서 all_matches_ids에 갖다붙이기
     while latest_match_id not in all_match_ids:
-      all_match_ids.update(match_v4.getSummonerMatches(puuid, limit, start = start_index, count = 100))
-      start_index+=100
+      results = match_v4.getSummonerMatches(puuid, limit, start = start_index, count = 100)
+      if len(results)!=0:
+        all_match_ids.update(results)
+        start_index+=100
+      else:
+        break
       
   else:
     while True:
@@ -46,7 +49,7 @@ def updateAndGetTotalMatchIds(db, limit: int, puuid):
         start_index+=100
       else:
         break
-  print("aweefwefaawefawefawefawefwf")
+  
   total_list = sorted(list(all_match_ids), reverse=True)
   db[col].update_one(
       {'puuid': puuid},
@@ -55,3 +58,24 @@ def updateAndGetTotalMatchIds(db, limit: int, puuid):
       True)
 
   return total_list
+
+def updateSummonerMatches(db, puuid, matchId):
+  summoner = findBySummonerPuuid(db, puuid)
+  
+  # 만약 db에 소환사 정보가 있다면
+  if summoner:
+    old_matches = db[col].find_one({"puuid":puuid})
+    # 1. summonerMatch가 있을 때:
+    if old_matches:
+      new_matches = old_matches["summoner_match_ids"]
+      if matchId not in new_matches:
+        new_matches.append(matchId)
+        db[col].update_one(
+          {'puuid': puuid},
+          {"$set": {"summoner_match_ids": sorted(new_matches, reverse=True)}}, True)
+    # 2. summonerMatch가 없을 때:  
+    else:
+      summoner_matches = {"puuid":puuid, "summoner_match_ids":[matchId]}
+      db[col].insert_one(summoner_matches)
+  
+    
