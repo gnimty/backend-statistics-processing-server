@@ -101,6 +101,7 @@ def insertMissingFields():
   
   return {"message":"업데이트 완료"}
 
+# if env!="local":
 # start_schedule([
 #   # 2시간에 한번씩 소환사 정보 배치
 #   {
