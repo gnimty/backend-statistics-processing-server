@@ -1,4 +1,5 @@
 import json
+import os, dotenv
 from bson import json_util
 from scheduler import start_schedule  # 스케줄러 로드
 
@@ -6,7 +7,7 @@ from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
 from flask_request_validator import *  # parameter validate
 from flask import Flask, jsonify, request, url_for
-import os, dotenv
+
 from config.mongo import mongoClient
 from utils.summoner_name import makeInternalName
 
@@ -93,10 +94,12 @@ def startSummonerBatchScheduler():
   ])
   return {"message":"scheduler started"}
 
-@app.route('/test/mmr')
-def mmrColumnFix():
-  summoner.mmrFix(db_riot)
-  return {"message":"complete"}
+
+@app.route("/batch/match/missing")
+def insertMissingFields():
+  match.updateParticipantSpells(db_riot, app.config["BATCH_LIMIT"])
+  
+  return {"message":"업데이트 완료"}
 
 # start_schedule([
 #   # 2시간에 한번씩 소환사 정보 배치
