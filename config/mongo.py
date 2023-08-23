@@ -11,12 +11,9 @@ def mongoClient(app, db):
   return mongoClient[db]
 
 def init_index(db):
-  league_entries_index = IndexModel([
-    ("summonerId",ASCENDING), 
-    ("summonerName", ASCENDING)
-    ], name ="league_entries_index")
   
   summoners_index = IndexModel([
+    ("mmr", ASCENDING),
     ("puuid", ASCENDING),
     ("internal_name", ASCENDING)
   ], name = "summoners_index")
@@ -60,7 +57,6 @@ def init_index(db):
     ("win_rate", DESCENDING),
   ],name = "champion_statics_index")
   
-  db.league_entries.create_indexes([league_entries_index])
   db.summoners.create_indexes([summoners_index])
   db.summoner_matches.create_indexes([summoner_matches_index])
   db.matches.create_indexes([matches_index])

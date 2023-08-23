@@ -94,6 +94,7 @@ def startSummonerBatchScheduler():
   ])
   return {"message":"scheduler started"}
 
+
 @app.route("/batch/match/missing")
 def insertMissingFields():
   match.updateParticipantSpells(db_riot, app.config["BATCH_LIMIT"])
