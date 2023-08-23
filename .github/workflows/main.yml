@@ -62,6 +62,6 @@ jobs:
             sudo echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
             sudo docker-compose -f docker-compose-dev.yml down -v
             sudo docker pull solmin2/statistics-processing-server:latest
-            sudo docker-compose -f docker-compose-dev.yml up -d
+            sudo docker-compose -f docker-compose-dev.yml up -d --build
           # sudo docker rm -f $(docker ps -qa)
           
