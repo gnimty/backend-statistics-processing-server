@@ -118,10 +118,6 @@ def refreshSummonerInfo(internal_name):
   
   return {"message":"업데이트 완료"}
 
-
-
-
-
 def updateMatchesByPuuid(puuid):
   matchIds = summoner_matches.updateAndGetTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
   for matchId in matchIds:

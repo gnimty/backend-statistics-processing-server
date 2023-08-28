@@ -91,6 +91,16 @@ def findBySummonerPuuid(db, puuid):
 
   return summoner
 
+def findBySummonerPuuid(db, puuid):
+  summoner = db[col].find_one(
+    {"puuid": puuid}, 
+    {"_id": 0, "accountId": 0})
+
+  if not summoner:
+    return None
+
+  return summoner
+
 
 def updateSummoner(db, summoner, summoner_brief):
   """summoner 정보 업데이트 및 history 객체 추가
