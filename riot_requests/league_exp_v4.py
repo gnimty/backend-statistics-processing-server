@@ -58,3 +58,16 @@ def get_specific_league(league, limit, queue="RANKED_SOLO_5x5"):
   
   return entries
 
+
+def get_summoner_by_id(encryptedSummonerId, limit):
+
+  url = f"https://kr.api.riotgames.com/lol/league/v4/entries/by-summoner/{encryptedSummonerId}"
+
+  ## delayable
+  results = delayableRequest(url, 10, limit)
+  
+  condition = lambda r: r["queueType"]== "RANKED_SOLO_5x5"
+  result = next((item for item in results if condition(item)), None)
+  
+
+  return result

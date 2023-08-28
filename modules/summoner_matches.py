@@ -13,9 +13,6 @@ def updateAndGetTotalMatchIds(db, limit: int, puuid):
 
   Raises:
       DataNotExists
-  
-  Returns:
-      puuid (str) : 소환사의 puuid
   """
   
   # 가장 최근 match id 가져오기
