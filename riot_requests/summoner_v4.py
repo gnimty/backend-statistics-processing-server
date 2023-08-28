@@ -30,6 +30,22 @@ def requestSummonerByName(summonerName, limit):
   
   return result
 
+def requestBySummonerPuuid(puuid, limit):
+  
+
+  if not puuid:
+    raise AttributeError(f"{__name__}의 인자를 잘못 넘겼습니다.")
+
+  url = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
+  result = delayableRequest(url, 20, limit)
+  
+  if "id" not in result:
+    return None
+  
+  del(result["accountId"]) # 필요 없는 properties 제거
+  
+  return result
+  
 def requestSummoner(limit, summonerName=None, summonerId=None):
   """summonerName 또는 summoner Id로 Summoner 정보 가져오기
   둘 중 하나의 인자라도 주어져야 하며 summonerName이 주어지면 summonerId는 무시됨

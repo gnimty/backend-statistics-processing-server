@@ -1,4 +1,4 @@
-from riot_requests import summoner_v4
+from riot_requests import summoner_v4, league_exp_v4
 from error.custom_exception import DataNotExists
 from datetime import datetime, timedelta
 import logging
@@ -16,18 +16,9 @@ division = {
   "IV":4
 }
 
-# def findAllSummonerId(db):
-#   summonerIds = list(db[col].find({}, {"_id":0, "summonerId":1}))
-  
-#   if len(summonerIds) == 0:
-#     raise DataNotExists("데이터베이스에서 소환사 정보를 찾을 수 없습니다.")
-#   return summonerIds
 
 def findAllSummonerPuuid(db):
   puuids = list(db[col].find({}, {"_id":0, "puuid":1}))
-  
-  if len(puuids) == 0:
-    raise DataNotExists("데이터베이스에서 소환사 정보를 찾을 수 없습니다.")
   
   return [s['puuid'] for s in puuids if 'puuid' in s]
 
@@ -48,33 +39,16 @@ def findBySummonerId(db, summonerId):
 
   if not summoner:
     logger.info("소환사 정보가 존재하지 않습니다.")
-    return None
-
-  # summoner["updatedAt"] = summoner["updatedAt"]+timedelta(hours=9)
-  return summoner
-
-def updateBySummonerName(db, summonerName, limit):
-  """소환사 이름으로 소환사 정보 업데이트
-  소환사 이름이 변경되어 API 서버에서 조회가 불가능한 시점에 호출
-  소환사 이름이 정확히 일치해야 함
   
-  Args:
-      db (connection)
-      summonerName (str)
-
-  Raises:
-      DataNotExists
-      TooManySummonerRequest: 업데이트 최종 시각이 현재 시간과 2분 이하로 차이날 때
-
-  Returns:
-      summoner: 소환사 정보
-  """
-  summoner = summoner_v4.requestSummonerByName(summonerName, limit)
-  summoner = updateSummoner(db, summoner, summoner)
-
-  # 저장된 정보는 utc time이기 때문에 9시간 더해서 보여주기
-  summoner["updatedAt"] = summoner["updatedAt"]+datetime.timedelta(hours=9)
   return summoner
+
+
+def updateBySummonerPuuid(db, puuid, limit):
+  summoner = findBySummonerPuuid(db, puuid)
+  
+  new_summoner = summoner_v4.requestBySummonerPuuid(puuid, limit)
+  
+  updateSummoner(db, summoner or new_summoner, new_summoner)
 
 
 def updateBySummonerBrief(db, summoner_brief, limit):
@@ -82,10 +56,9 @@ def updateBySummonerBrief(db, summoner_brief, limit):
       db,
       findBySummonerId(db, summoner_brief["summonerId"]) or
       summoner_v4.requestSummonerById(summoner_brief["summonerId"], limit), summoner_brief)
-  # summoner["updatedAt"] = summoner["updatedAt"]+datetime.timedelta(hours=9)
 
 
-def findBySummonerName(db, summonerName):
+def findBySummonerName(db, summonerName, limit):
   """소환사 이름으로 소환사 정보 조회
 
   Args:
@@ -100,18 +73,21 @@ def findBySummonerName(db, summonerName):
     {"_id": 0, "accountId": 0})
 
   if not summoner:
-    return None
+    return summoner_v4.requestSummonerByName(summonerName, limit)
 
-  # summoner["updatedAt"] = summoner["updatedAt"]+datetime.timedelta(hours=9)
   return summoner
 
+def findSummonerRankInfoBySummonerId(summonerId, limit):
+  return league_exp_v4.get_summoner_by_id(summonerId, limit)
+  
+  
+  
+  
+  
 def findBySummonerPuuid(db, puuid):
   summoner = db[col].find_one(
     {"puuid": puuid}, 
     {"_id": 0, "accountId": 0})
-
-  if not summoner:
-    return None
 
   return summoner
 
