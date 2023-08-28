@@ -25,7 +25,13 @@ class CustomUserError(Exception):
         self.status_code = status_code
         self.error_type = error_type
         self.error_message = error_message
-        
+
+class UserUpdateFailed(CustomUserError):
+    def __init__(self, error_message):
+        self.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        self.error_message = error_message
+        self.error_type = "INTERNAL ERROR"
+
 class RateLimiteExceededError(CustomUserError):
     def __init__(self, error_message):
         self.status_code = status.HTTP_429_TOO_MANY_REQUESTS

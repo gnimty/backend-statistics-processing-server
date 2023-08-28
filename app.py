@@ -76,7 +76,7 @@ def matchBatch():  # 전적정보 배치 수행
         
         match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
       except Exception:
-        logger.error("matchId = {}에 해당하는 전적 정보를 불러오는 데 실패했습니다.")
+        logger.error("matchId = {}에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
 
   return {"status": "ok", "message": "전적 정보 배치가 완료되었습니다."}
 
@@ -95,11 +95,41 @@ def startSummonerBatchScheduler():
   return {"message":"scheduler started"}
 
 
-@app.route("/batch/match/missing")
-def insertMissingFields():
-  match.updateParticipantSpells(db_riot, app.config["BATCH_LIMIT"])
+@app.route("/batch/summoner/refresh/<internal_name>", methods=["POST"] )
+def refreshSummonerInfo(internal_name):
+  
+  # 만약 internal_name 해당하는 유저 정보가 존재한다면 가져온 summonerId로 refresh
+  summonerInfo = summoner.findBySummonerName(db_riot,internal_name, app.config["BATCH_LIMIT"])
+  
+  if not summonerInfo:
+    raise UserUpdateFailed("유저 전적 업데이트 실패")    
+    
+  # 이후 해당 소환사의 summonerId로 소환사 랭크 정보 가져오기 -> diamond 이하라면 버리기
+  entry = summoner.findSummonerRankInfoBySummonerId(summonerInfo["id"], app.config["BATCH_LIMIT"])
+  entry["queue"] = entry["tier"].lower()
+  entry["tier"] = entry["rank"]
+  del entry["rank"]
+  if entry["queue"] not in ["master", "challenger", "grandmaster"]:
+    raise UserUpdateFailed("유저 전적 업데이트 실패")    
+  
+  summoner.updateSummoner(db_riot, summonerInfo, entry)
+  
+  updateMatchesByPuuid(summonerInfo["puuid"])
   
   return {"message":"업데이트 완료"}
+
+
+
+
+
+def updateMatchesByPuuid(puuid):
+  matchIds = summoner_matches.updateAndGetTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
+  for matchId in matchIds:
+    try:
+      
+      match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
+    except Exception:
+      logger.error("matchId = {}에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
 
 # if env!="local":
 # start_schedule([
