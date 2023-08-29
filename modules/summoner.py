@@ -170,4 +170,16 @@ def mmrFix(db):
       {"$set": summoner},
       True)
     
+def summonerRequestLimit(db, internal_name):
   
+  summoner = db[col].find_one({"internal_name":internal_name})
+  
+  # TODO 여기 나중에 예외처리
+  if not summoner:
+    return 
+  
+  summoner["updatedAt"] = datetime.now()
+  db[col].update_one(
+      {"puuid": summoner["puuid"]},
+      {"$set": summoner},
+      True)
