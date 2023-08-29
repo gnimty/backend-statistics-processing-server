@@ -97,7 +97,7 @@ def startSummonerBatchScheduler():
 
 @app.route("/batch/summoner/refresh/<internal_name>", methods=["POST"] )
 def refreshSummonerInfo(internal_name):
-  
+  summoner.summonerRequestLimit(db_riot, internal_name)
   # 만약 internal_name 해당하는 유저 정보가 존재한다면 가져온 summonerId로 refresh
   summonerInfo = summoner.findBySummonerName(db_riot,internal_name, app.config["BATCH_LIMIT"])
   
