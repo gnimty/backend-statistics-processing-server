@@ -120,7 +120,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
         
       history = findSummonerHistory(db,participant["puuid"], match["gameStartAt"])
       # 같이 플레이한 다른 소환사들의 matches 리스트를 업데이트 
-      updateSummonerMatches(db, participant["puuid"], matchId)
+      # updateSummonerMatches(db, participant["puuid"], matchId)
       
       info_participants.append({
         "matchId" : matchId,
