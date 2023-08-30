@@ -131,17 +131,17 @@ def updateMatchesByPuuid(puuid):
     except Exception:
       logger.error("matchId = {}에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
 
-# if env!="local":
-# start_schedule([
-#   # 2시간에 한번씩 소환사 정보 배치
-#   {
-#     "job":leagueEntriesBatch,
-#     "method":"cron",
-#     "time":{
-#       "minute":1
-#     }
-#   },
-# ])
+if env!="local":
+  start_schedule([
+    # 2시간에 한번씩 소환사 정보 배치
+    {
+      "job":leagueEntriesBatch,
+      "method":"cron",
+      "time":{
+        "hour":app.config["SUMMONER_BATCH_HOUR"]
+      }
+    },
+])
 #   # 4시 정각에 돌아가도록 설정
 #   {
 #     "job":matchBatch,
