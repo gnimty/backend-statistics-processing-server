@@ -124,15 +124,16 @@ def refreshSummonerInfo(puuid):
 
 
 def updateMatchesByPuuid(puuid):
-  matchIds = summoner_matches.updateAndGetTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
+  matchIds = summoner_matches.getTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
   for matchId in matchIds:
     try:
-      
       match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
     except Exception:
-      logger.error("matchId = {}에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
+      logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
+  
+  summoner_matches.updateSummonerMatches(db_riot, puuid, matchIds)  
   summoner_plays.updateSummonerPlays(db_riot, puuid)
-
+  
 if env!="local":
   start_schedule([
     # 2시간에 한번씩 소환사 정보 배치
