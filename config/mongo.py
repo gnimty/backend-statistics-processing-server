@@ -22,6 +22,12 @@ def init_index(db):
     ("puuid", ASCENDING)
   ], name = "summoner_matches_index")
   
+  summoner_plays_index = IndexModel([
+    ("puuid", ASCENDING),
+    ("totalPlays", DESCENDING),
+    ("championId", ASCENDING),
+  ], name = "summoner_plays_index")
+  
   matches_index = IndexModel([
     ("matchId", DESCENDING),
     ("gameCreation", DESCENDING),
@@ -64,4 +70,5 @@ def init_index(db):
   db.champion_statics_lane.create_indexes([champion_statics_lane_index])
   db.champion_statics.create_indexes([champion_statics_index])
   db.teams.create_indexes([teams_index])
+  db.summoner_plays.create_indexes([summoner_plays_index])
   # db.timelines.create_indexes([timelines_index])

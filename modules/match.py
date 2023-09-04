@@ -5,7 +5,6 @@ from error import custom_exception
 from flask_api import status
 from utils import date_calc
 from modules.summoner import findSummonerHistory
-from modules.summoner_matches import updateSummonerMatches
 
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
@@ -64,6 +63,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
         if "gameEndTimestamp" in info 
         else date_calc.timeStampToDateTime(str(info["gameStartTimestamp"] + 1000*info["gameDuration"])) ,
       "version": shortGameVersion(info["gameVersion"]),
+      "fullVersion": info["gameVersion"],
       "earlyEnded": False
     }
     
@@ -108,10 +108,6 @@ def updateMatch(db, raw_db, matchId, limit: int):
         else:
           killParticipation = round(((participant["kills"]+participant["assists"])/ total_team_kills), 2)
       
-      # 게임 조기 종료
-      if "gameEndedInEarlySurrender" in info:
-        match["earlyEnded"] = True
-      
       # 승리 여부
       if win_team_id == participant["teamId"]:
         win="true"
@@ -122,6 +118,10 @@ def updateMatch(db, raw_db, matchId, limit: int):
       # 같이 플레이한 다른 소환사들의 matches 리스트를 업데이트 
       # updateSummonerMatches(db, participant["puuid"], matchId)
       
+      # 게임 조기 종료
+      if participant["gameEndedInEarlySurrender"]:
+        match["earlyEnded"] = True
+        
       info_participants.append({
         "matchId" : matchId,
         "teamId":participant["teamId"],
@@ -163,6 +163,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
         "spellFId":participant["summoner2Id"],
         "win":win,
         "gameDuration": info["gameDuration"],
+        "ealryEnded":participant["gameEndedInEarlySurrender"]
       })
     
     for initial_timeline_info in result_timeline["info"]["participants"]:
