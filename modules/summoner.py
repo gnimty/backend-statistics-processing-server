@@ -1,6 +1,6 @@
 from riot_requests import summoner_v4, league_exp_v4
 from error.custom_exception import DataNotExists
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 from utils.date_calc import lastModifiedFromNow
 from utils.summoner_name import makeInternalName
@@ -15,7 +15,6 @@ division = {
   "III":3,
   "IV":4
 }
-
 
 def findAllSummonerPuuid(db):
   puuids = list(db[col].find({}, {"_id":0, "puuid":1}))
@@ -44,7 +43,7 @@ def findBySummonerId(db, summonerId):
 
 
 def updateBySummonerPuuid(db, puuid, limit):
-  summoner = findBySummonerPuuid(db, puuid)
+  summoner = findSummonerByPuuid(db, puuid)
   
   new_summoner = summoner_v4.requestBySummonerPuuid(puuid, limit)
   
@@ -58,33 +57,11 @@ def updateBySummonerBrief(db, summoner_brief, limit):
       summoner_v4.requestSummonerById(summoner_brief["summonerId"], limit), summoner_brief)
 
 
-def findBySummonerName(db, summonerName, limit):
-  """소환사 이름으로 소환사 정보 조회
-
-  Args:
-      db (connection)
-      summonerName (str)
-
-  Returns:
-      summoner
-  """
-  summoner = db[col].find_one(
-    {"name": summonerName}, 
-    {"_id": 0, "accountId": 0})
-
-  if not summoner:
-    return summoner_v4.requestSummonerByName(summonerName, limit)
-
-  return summoner
-
 def findSummonerRankInfoBySummonerId(summonerId, limit):
   return league_exp_v4.get_summoner_by_id(summonerId, limit)
   
   
-  
-  
-  
-def findBySummonerPuuid(db, puuid):
+def findSummonerByPuuid(db, puuid):
   summoner = db[col].find_one(
     {"puuid": puuid}, 
     {"_id": 0, "accountId": 0})
@@ -170,9 +147,8 @@ def mmrFix(db):
       {"$set": summoner},
       True)
     
-def summonerRequestLimit(db, internal_name):
-  
-  summoner = db[col].find_one({"internal_name":internal_name})
+def summonerRequestLimit(db, puuid):
+  summoner = db[col].find_one({"puuid":puuid})
   
   # TODO 여기 나중에 예외처리
   if not summoner:

@@ -1,6 +1,6 @@
 from riot_requests import match_v4
 from error.custom_exception import *
-from modules.summoner import findBySummonerPuuid
+
 col = "summoner_matches"
 
 def updateAndGetTotalMatchIds(db, limit: int, puuid):
@@ -55,24 +55,5 @@ def updateAndGetTotalMatchIds(db, limit: int, puuid):
       True)
 
   return total_list
-
-def updateSummonerMatches(db, puuid, matchId):
-  summoner = findBySummonerPuuid(db, puuid)
-  
-  # 만약 db에 소환사 정보가 있다면
-  if summoner:
-    old_matches = db[col].find_one({"puuid":puuid})
-    # 1. summonerMatch가 있을 때:
-    if old_matches:
-      new_matches = old_matches["summoner_match_ids"]
-      if matchId not in new_matches:
-        new_matches.append(matchId)
-        db[col].update_one(
-          {'puuid': puuid},
-          {"$set": {"summoner_match_ids": sorted(new_matches, reverse=True)}}, True)
-    # 2. summonerMatch가 없을 때:  
-    else:
-      summoner_matches = {"puuid":puuid, "summoner_match_ids":[matchId]}
-      db[col].insert_one(summoner_matches)
   
     
