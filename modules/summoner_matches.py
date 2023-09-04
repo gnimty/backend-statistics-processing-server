@@ -3,7 +3,7 @@ from error.custom_exception import *
 
 col = "summoner_matches"
 
-def updateAndGetTotalMatchIds(db, limit: int, puuid):
+def getTotalMatchIds(db, limit: int, puuid):
   """
   소환사의 최근 match Id 리스트를 업데이트
 
@@ -56,4 +56,9 @@ def updateAndGetTotalMatchIds(db, limit: int, puuid):
 
   return total_list
   
-    
+def updateSummonerMatches(db, puuid, matchIds):
+  db[col].update_one(
+      {'puuid': puuid},
+      {"$set": {"summoner_match_ids": sorted(
+          list(matchIds), reverse=True)}},
+      True)

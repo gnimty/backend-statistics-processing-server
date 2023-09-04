@@ -69,12 +69,10 @@ def error_handle(app):
     
     @app.errorhandler(status.HTTP_404_NOT_FOUND)
     def handle_rule_error(e):
-        traceback.print_exc()
         logger.error(e)
         return error_response(e, "올바른 경로로 접근하세요.", "Page not found.",status.HTTP_404_NOT_FOUND)
     
     @app.errorhandler(CustomUserError)
     def handle_error(e):
-        traceback.print_exc()
         logger.error(e)
         return error_response(e, e.error_message, e.error_type, e.status_code)
