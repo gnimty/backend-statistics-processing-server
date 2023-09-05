@@ -120,6 +120,7 @@ def refreshSummonerInfo(puuid):
   return {"message":"업데이트 완료"}
 
 
+# TODO deprecated
 @app.route("/batch/history/move", methods=["POST"] )
 def moveHistoryFields():
   
@@ -139,6 +140,7 @@ def updateMatchesByPuuid(puuid, api_limit = app.config["BATCH_LIMIT"]):
   
   summoner_matches.updateSummonerMatches(db_riot, puuid, matchIds)  
   summoner_plays.updateSummonerPlays(db_riot, puuid)
+  summoner.updateLatest20GameInfo(db_riot, puuid)
 
 
 if env!="local":
