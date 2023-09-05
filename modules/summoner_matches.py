@@ -19,8 +19,7 @@ def getTotalMatchIds(db, limit: int, puuid):
   old_matches = db[col].find_one({"puuid":puuid})
   
   # 모든 matchId 담을 변수, 최근 matchId 우선 가져오기 (100개씩))
-  all_match_ids = set(match_v4.getSummonerMatches(
-      puuid, limit, count = 100))
+  all_match_ids = set()
   
   # 다음 페이지 조회 시 이용하는 변수
   start_index=100
@@ -38,6 +37,8 @@ def getTotalMatchIds(db, limit: int, puuid):
       else:
         break
       
+    all_match_ids.update(old_matches["summoner_match_ids"])
+      
   else:
     while True:
       new_match_list = match_v4.getSummonerMatches(puuid, limit, start = start_index, count = 100)
@@ -46,8 +47,13 @@ def getTotalMatchIds(db, limit: int, puuid):
         start_index+=100
       else:
         break
+      
+  
   
   total_list = sorted(list(all_match_ids), reverse=True)
+  
+  
+  
   db[col].update_one(
       {'puuid': puuid},
       {"$set": {"summoner_match_ids": sorted(
