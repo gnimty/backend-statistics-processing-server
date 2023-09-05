@@ -88,4 +88,34 @@ def updateSummonerPlays(db, puuid):
       True
     )
   
-    
+def updateMostChampions(db, puuid):
+  pipeline_champion =  [
+    {
+      "$match":{
+        "puuid":puuid
+      }
+    },
+    {
+      "$sort":{
+        "totalPlays": -1  
+      }
+    },
+    {
+      "$limit":3
+    },
+    {
+      "$project":{
+        "_id":0,
+        "championId":1   
+      }
+    }
+  ]
+  
+  aggregated = list(db[col].aggregate(pipeline_champion))
+  
+  result  = [r["championId"] for r in aggregated]
+  
+  return result
+  
+  
+                    

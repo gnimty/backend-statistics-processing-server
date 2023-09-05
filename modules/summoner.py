@@ -5,6 +5,7 @@ import logging
 from utils.date_calc import lastModifiedFromNow
 from utils.summoner_name import makeInternalName
 from modules.TierDivisionMMR import MMR
+from modules.summoner_plays import updateMostChampions
 
 logger = logging.getLogger("app")
 col = "summoners"
@@ -199,14 +200,14 @@ def moveHistoryFields(db):
         {"$unset": {"history":""}})
       
 
-def updateLatest20GameInfo(db, puuid):
+def updateSummaries(db, puuid):
   summoner = findSummonerByPuuid(db, puuid)
   
   if not summoner:
     return
   
   # 1. summonerMatches에서 최근 20개의 gameId를 가져오기
-  pipeline = [
+  pipeline_lane = [
     {"$match":{
       "puuid":puuid,
       "lane":{
@@ -227,14 +228,13 @@ def updateLatest20GameInfo(db, puuid):
       "_id":0
     }}
   ]
-  aggregated = list(db["participants"].aggregate(pipeline))
+  aggregated = list(db["participants"].aggregate(pipeline_lane))
   
-  result  = [r["lane"] for r in aggregated][:3]
+  summoner["mostLanes"] = [r["lane"] for r in aggregated][:3]
   
-  summoner["mostLanes"] = result
+  summoner["mostChampionIds"] = updateMostChampions(db, puuid)
   
   db[col].update_one(
     {"puuid": summoner["puuid"]},
     {"$set":summoner},
     True)
-  
