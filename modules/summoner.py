@@ -197,3 +197,44 @@ def moveHistoryFields(db):
       db[col].update_one(
         {"puuid": summoner["puuid"]},
         {"$unset": {"history":""}})
+      
+
+def updateLatest20GameInfo(db, puuid):
+  summoner = findSummonerByPuuid(db, puuid)
+  
+  if not summoner:
+    return
+  
+  # 1. summonerMatches에서 최근 20개의 gameId를 가져오기
+  pipeline = [
+    {"$match":{
+      "puuid":puuid,
+      "lane":{
+        "$in": ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+      }
+    }},
+    {"$sort": {"matchId": -1}},
+    {"$limit": 20},
+    {"$group":{
+     "_id":"$lane",
+     "plays":{"$sum":1} 
+    }},
+    {"$sort": {
+      "plays": -1
+    }},
+    {"$project":{
+      "lane":"$_id",
+      "_id":0
+    }}
+  ]
+  aggregated = list(db["participants"].aggregate(pipeline))
+  
+  result  = [r["lane"] for r in aggregated][:3]
+  
+  summoner["mostLanes"] = result
+  
+  db[col].update_one(
+    {"puuid": summoner["puuid"]},
+    {"$set":summoner},
+    True)
+  
