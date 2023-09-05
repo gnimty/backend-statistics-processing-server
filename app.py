@@ -120,6 +120,15 @@ def refreshSummonerInfo(puuid):
   return {"message":"업데이트 완료"}
 
 
+@app.route("/batch/history/move", methods=["POST"] )
+def moveHistoryFields():
+  
+  summoner.moveHistoryFields(db_riot)
+  
+  return {"message":"업데이트 완료"}
+    
+
+
 def updateMatchesByPuuid(puuid, api_limit = app.config["BATCH_LIMIT"]):
   matchIds = summoner_matches.getTotalMatchIds(db_riot, api_limit, puuid)
   for matchId in matchIds:
@@ -130,7 +139,8 @@ def updateMatchesByPuuid(puuid, api_limit = app.config["BATCH_LIMIT"]):
   
   summoner_matches.updateSummonerMatches(db_riot, puuid, matchIds)  
   summoner_plays.updateSummonerPlays(db_riot, puuid)
-  
+
+
 if env!="local":
   start_schedule([
     # 2시간에 한번씩 소환사 정보 배치

@@ -4,7 +4,7 @@ import logging
 from error import custom_exception
 from flask_api import status
 from utils import date_calc
-from modules.summoner import findSummonerHistory
+from modules.summoner import findHistoryByStdDate
 
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
@@ -114,7 +114,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
       else:
         win="false"
         
-      history = findSummonerHistory(db,participant["puuid"], match["gameStartAt"])
+      history = findHistoryByStdDate(db,participant["puuid"], match["gameStartAt"])
       # 같이 플레이한 다른 소환사들의 matches 리스트를 업데이트 
       # updateSummonerMatches(db, participant["puuid"], matchId)
       
