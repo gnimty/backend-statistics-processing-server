@@ -99,7 +99,7 @@ def refreshSummonerInfo(puuid):
     raise UserUpdateFailed("유저 전적 업데이트 실패")    
     
   # 이후 해당 소환사의 summonerId로 소환사 랭크 정보 가져오기 -> diamond 이하라면 버리기
-  entry = summoner.findSummonerRankInfoBySummonerId(summonerInfo["id"], app.config["BATCH_LIMIT"])
+  entry = summoner.findSummonerRankInfoBySummonerId(summonerInfo["id"], app.config["API_REQUEST_LIMIT"])
   
   # TODO 현재는 개인랭크 업데이트만 하고 있기 때문에 추후에 변경해야 함
   if entry==None:
@@ -113,27 +113,34 @@ def refreshSummonerInfo(puuid):
   
   summoner.updateSummoner(db_riot, summonerInfo, entry)
   
-  updateMatchesByPuuid(summonerInfo["puuid"])
+  updateMatchesByPuuid(summonerInfo["puuid"], api_limit=app.config["API_REQUEST_LIMIT"])
   
   summoner.summonerRequestLimit(db_riot, puuid)
   
   return {"message":"업데이트 완료"}
 
 
+@app.route("/batch/history/move", methods=["POST"] )
+def moveHistoryFields():
+  
+  summoner.moveHistoryFields(db_riot)
+  
+  return {"message":"업데이트 완료"}
+    
 
 
-
-def updateMatchesByPuuid(puuid):
-  matchIds = summoner_matches.getTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
+def updateMatchesByPuuid(puuid, api_limit = app.config["BATCH_LIMIT"]):
+  matchIds = summoner_matches.getTotalMatchIds(db_riot, api_limit, puuid)
   for matchId in matchIds:
     try:
-      match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
+      match.updateMatch(db_riot, db_stat, matchId, api_limit)
     except Exception:
       logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
   
   summoner_matches.updateSummonerMatches(db_riot, puuid, matchIds)  
   summoner_plays.updateSummonerPlays(db_riot, puuid)
-  
+
+
 if env!="local":
   start_schedule([
     # 2시간에 한번씩 소환사 정보 배치

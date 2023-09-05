@@ -8,7 +8,6 @@ from modules.TierDivisionMMR import MMR
 
 logger = logging.getLogger("app")
 col = "summoners"
-
 division = {
   "I":1,
   "II":2,
@@ -70,7 +69,7 @@ def findSummonerByPuuid(db, puuid):
 
 
 def updateSummoner(db, summoner, summoner_brief):
-  """summoner 정보 업데이트 및 history 객체 추가
+  """summoner 정보 업데이트 및 history collection 업데이트
 
   Args:
       summoner: 현재 정보
@@ -95,16 +94,21 @@ def updateSummoner(db, summoner, summoner_brief):
   summoner["mmr"] = MMR[summoner["queue"]].value + int(summoner["leaguePoints"])\
   
   # history list 존재하면 갖다 붙이고 없으면 새로 생성
-  if not summoner.get("history"):
-    summoner["history"] = [{
-      "queue":summoner_brief["queue"],
-      "tier":summoner_brief["tier"],
-      "leaguePoints":summoner_brief["leaguePoints"],
-      "updatedAt":summoner["updatedAt"]
-    }]
+  summoner_history = findSummonerHistories(db, summoner["puuid"])
+  
+  if not summoner_history or not summoner_history.get("history"):
+    summoner_history = {
+        "puuid": summoner["puuid"],
+        "history": [{
+            "queue": summoner_brief["queue"],
+            "tier":summoner_brief["tier"],
+            "leaguePoints":summoner_brief["leaguePoints"],
+            "updatedAt":summoner["updatedAt"]
+        }]
+    }
   else:
     # history 맨 처음에 insert
-    summoner["history"].insert(0, {
+    summoner_history["history"].insert(0, {
       "queue":summoner_brief["queue"],
       "tier":summoner_brief["tier"],
       "leaguePoints":summoner_brief["leaguePoints"],
@@ -115,20 +119,30 @@ def updateSummoner(db, summoner, summoner_brief):
       {"puuid": summoner["puuid"]},
       {"$set": summoner},
       True)
+  
+  db["summoner_history"].update_one(
+      {"puuid": summoner["puuid"]},
+      {"$set": summoner_history},
+      True)
+  
   return summoner
+
+
+def findSummonerHistories(db, puuid):
+  return db["summoner_history"].find_one({"puuid":puuid})
   
 
-def findSummonerHistory(db, puuid, stdDate):
-  summoner = db[col].find_one({"puuid":puuid})
+def findHistoryByStdDate(db, puuid, stdDate):
+  summoner_history = findSummonerHistories(db, puuid)
   
-  if not summoner or "history" not in summoner:
+  if not summoner_history or "history" not in summoner_history:
     return {
         "queue":None,
         "tier":None,
         "leaguePoints":None
       }
   
-  for h in summoner["history"]:
+  for h in summoner_history["history"]:
     # 히스토리 날짜와 매치 날짜 비교 후 매치 날짜가 히스토리 날짜보다 최신이면 다음 히스토리 탐색
     # 그렇지 않으면 현재 탐색한 히스토리 이전 데이터를 티어 정보로 산정
     # 만약 전부 탐색해도 결과가 나오지 않으면 가장 오래된 history를 티어 정보로 산정
@@ -159,3 +173,27 @@ def summonerRequestLimit(db, puuid):
       {"puuid": summoner["puuid"]},
       {"$set": summoner},
       True)
+  
+  
+def moveHistoryFields(db):
+  summoners = list(db[col].find({}))
+  
+  for i in range(len(summoners)):
+    summoner = summoners[i]
+    
+    # 1. history 필드가 있으면 summoner_history에 이관시키기
+    if "history" in summoner:
+      
+      summoner_history = {
+        "puuid": summoner["puuid"],
+        "history": summoner["history"]
+      }
+      
+      db["summoner_history"].update_one(
+        {"puuid": summoner["puuid"]},
+        {"$set": summoner_history},
+      True)
+      
+      db[col].update_one(
+        {"puuid": summoner["puuid"]},
+        {"$unset": {"history":""}})
