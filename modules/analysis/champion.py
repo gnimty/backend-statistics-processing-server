@@ -115,9 +115,17 @@ def championAnalysis(db):
     
     
     del result["_id"]
-    operations.append(UpdateOne({"championId":result["championId"], "lane":result["lane"]},{"$set":result},upsert=True))
+    operations.append(UpdateOne(
+      {
+        "championId":result["championId"], 
+        "lane":result["lane"]
+      },
+      {
+        "$set":result
+      },
+      upsert=True))
     
-  db["champion_statics_lane"].bulk_write(operations)
+  result = db["champion_statistics_lane"].bulk_write(operations)
   
   operations.clear() # 재사용
   
@@ -160,7 +168,8 @@ def championAnalysis(db):
     
     operations.append(UpdateOne({"championId":result["championId"]},{"$set":result},upsert=True))
 
-  db["champion_statics"].bulk_write(operations)
+  db["champion_statistics"].bulk_write(operations)
   
-  return {"results_with_lane":results_with_lane, "results_total":results_total}
+  # return {"results_with_lane":results_with_lane, "results_total":results_total}
+  return  
   

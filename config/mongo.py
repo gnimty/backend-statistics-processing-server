@@ -48,32 +48,24 @@ def init_index(db):
     ("teamId", ASCENDING),
   ],name = "teams_index")
   
-  # timelines_index = IndexModel([
-  #   ("matchId", DESCENDING),
-  #   ("puuid", ASCENDING),
-  #   ("teamId", ASCENDING),
-  #   ("participantId", ASCENDING),
-  # ],name = "timelines_index")
-  
-  champion_statics_lane_index = IndexModel([
+  champion_statistics_lane_index = IndexModel([
     ("championName", ASCENDING),
     ("plays", DESCENDING),
     ("win_rate", DESCENDING),
-  ],name = "champion_statics_lane_index")
+  ],name = "champion_statistics_lane_index")
   
-  champion_statics_index = IndexModel([
+  champion_statistics_index = IndexModel([
     ("championName", ASCENDING),
     ("plays", DESCENDING),
     ("win_rate", DESCENDING),
-  ],name = "champion_statics_index")
+  ],name = "champion_statistics_index")
   
   db.summoners.create_indexes([summoners_index])
   db.summoner_history.create_indexes([summoner_history_index])
   db.summoner_matches.create_indexes([summoner_matches_index])
   db.matches.create_indexes([matches_index])
   db.participants.create_indexes([participants_index])
-  db.champion_statics_lane.create_indexes([champion_statics_lane_index])
-  db.champion_statics.create_indexes([champion_statics_index])
+  db.champion_statistics_lane.create_indexes([champion_statistics_lane_index])
+  db.champion_statistics.create_indexes([champion_statistics_index])
   db.teams.create_indexes([teams_index])
   db.summoner_plays.create_indexes([summoner_plays_index])
-  # db.timelines.create_indexes([timelines_index])

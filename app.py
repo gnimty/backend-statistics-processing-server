@@ -42,6 +42,8 @@ db_stat = mongoClient(app, app.config["MONGO_STATISTICS_DB"])  # pymongo connect
 #       port = int(app.config.get("REDIS_PORT")) or 6379)
 
 from modules import summoner, league_entries, match, summoner_matches, summoner_plays
+from modules.analysis import champion as champion_analysis
+
 
 @app.route('/batch', methods=["POST"])
 def leagueEntriesBatch():
@@ -86,6 +88,7 @@ def startSummonerBatchScheduler():
     }
   },
   ])
+  logger.info("소환사 배치 스케줄 시작")
   return {"message":"scheduler started"}
 
 
@@ -118,16 +121,12 @@ def refreshSummonerInfo(puuid):
   summoner.summonerRequestLimit(db_riot, puuid)
   
   return {"message":"업데이트 완료"}
-
-
-# TODO deprecated
-@app.route("/batch/history/move", methods=["POST"] )
-def moveHistoryFields():
-  
-  summoner.moveHistoryFields(db_riot)
-  
-  return {"message":"업데이트 완료"}
     
+@app.route("/batch/champion/statistics", methods=["POST"] )
+def generateChampionStatistics():
+  champion_analysis.championAnalysis(db_riot)
+  
+  return {"message":"통계정보 생성 완료"}
 
 
 def updateMatchesByPuuid(puuid, api_limit = app.config["BATCH_LIMIT"]):
@@ -143,26 +142,37 @@ def updateMatchesByPuuid(puuid, api_limit = app.config["BATCH_LIMIT"]):
   summoner.updateSummaries(db_riot, puuid)
 
 
-if env!="local":
+if env=="dev":
+  logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
+  
   start_schedule([
-    # 2시간에 한번씩 소환사 정보 배치
+    # [SUMMONER_BATCH_HOUR]시간마다 소환사 정보 배치
     {
       "job":leagueEntriesBatch,
-      "method":"cron",
-      "time":{
-        "hour":app.config["SUMMONER_BATCH_HOUR"]
+      "method":"interval",
+      "time": {
+        "hours": app.config["SUMMONER_BATCH_HOUR"]
       }
     },
-])
-#   # 4시 정각에 돌아가도록 설정
-#   {
-#     "job":matchBatch,
-#     "method":"cron",
-#     "time":{
-#       "hour":app.config["BATCH_HOUR"]
-#     }
-#   }
-#   ])
+    # 자정에 챔피언 분석 정보 배치
+    {
+      "job":generateChampionStatistics,
+      "method":"cron",
+      "time":{
+        "hour": 0
+      }
+    },
+    # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
+    # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
+    {
+      "job":matchBatch,
+      "method":"cron",
+      "time":{
+        "hour": app.config["MATCH_BATCH_HOUR"]
+      }
+    } 
+  ])
+
 
 if __name__ == "__main__":
   app.run(
