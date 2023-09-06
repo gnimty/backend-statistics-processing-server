@@ -55,46 +55,109 @@ def championAnalysis(db):
     }
   ]
   
-  pipeline_total = [
-    {
-      "$match":{
-        "gameDuration": { "$gte" : 300 }
-      }
-    },
-    {
-      "$group" :{
-        "_id" : {"championId":"$championId", "championName":"$championName"}, 
-        "plays":{"$sum":1},
-        "kills":{"$sum":"$kills"},
-        "deaths":{"$sum":"$deaths"},
-        "assists":{"$sum":"$assists"},
-        "gameDuration":{"$avg":{"$toDouble":"$gameDuration"}},
-        "cs":{"$avg":{"$toDouble":"$cs"}},
-        "total_wins":{
-          "$sum":{
-            "$cond":[{"$eq":["$win","true"]}, 1, 0]
-          }
-        },
-        "total_defeats":{
-          "$sum":{
-            "$cond":[{"$eq":["$win","false"]}, 1, 0]
-          }
-        },
-        "goldEarned":{"$avg":"$goldEarned"},
+  # # pipeline_total = [
+  #   {
+  #     "$match":{
+  #       "gameDuration": { "$gte" : 300 }
+  #     }
+  #   },
+  #   {
+  #     "$group" :{
+  #       "_id" : {"championId":"$championId", "championName":"$championName"}, 
+  #       "plays":{"$sum":1},
+  #       "kills":{"$sum":"$kills"},
+  #       "deaths":{"$sum":"$deaths"},
+  #       "assists":{"$sum":"$assists"},
+  #       "gameDuration":{"$avg":{"$toDouble":"$gameDuration"}},
+  #       "cs":{"$avg":{"$toDouble":"$cs"}},
+  #       "total_wins":{
+  #         "$sum":{
+  #           "$cond":[{"$eq":["$win","true"]}, 1, 0]
+  #         }
+  #       },
+  #       "total_defeats":{
+  #         "$sum":{
+  #           "$cond":[{"$eq":["$win","false"]}, 1, 0]
+  #         }
+  #       },
+  #       "goldEarned":{"$avg":"$goldEarned"},
         
+  #     }
+  #   },
+  #   {
+  #     "$project":{
+  #       "plays":1,
+  #       "kills":1,
+  #       "deaths":1,
+  #       "assists":1,
+  #       "total_wins":1,
+  #       "total_defeats":1,
+  #       "gameDuration":{"$round":["$gameDuration", 2]},
+  #       "goldEarned":{"$round":["$goldEarned", 2]},
+  #       "cs":{"$round":["$cs", 2]},
+  #     }
+  #   }
+  # ]
+  
+  pipeline_total = [
+    # championId별로 그룹핑
+    {
+      '$group':{
+        "_id": { "championId": '$championId', "championName": '$championName'},
+        "totalPlays": { '$sum': 1 },
+        "totalWin": { '$sum': { '$cond': [{ '$eq': ['$win', 'true'] }, 1, 0] } },
+        "totalGameDuration": {'$sum': '$gameDuration'},
+        "totalCs": {'$sum': '$cs'},
+        "totalKill": { '$sum': '$kills' },
+        "totalDeath": { '$sum': '$deaths' },
+        "totalAssist": { '$sum': '$assists' },
       }
     },
+    # 평균치 계산 및 추가 필드 넣기
     {
-      "$project":{
-        "plays":1,
-        "kills":1,
-        "deaths":1,
-        "assists":1,
-        "total_wins":1,
-        "total_defeats":1,
-        "gameDuration":{"$round":["$gameDuration", 2]},
-        "goldEarned":{"$round":["$goldEarned", 2]},
-        "cs":{"$round":["$cs", 2]},
+      '$addFields':{
+        "avgCs": {'$round': [ {'$divide':['$totalCs', '$totalPlays']}, 2]},
+        "avgCsPerMinute": {
+          '$round': [ 
+            {
+              '$divide':[
+                '$totalCs', {'$divide':['$totalGameDuration', 60]}
+              ]
+            }, 2]
+        },
+        "totalDefeat": { '$subtract': ['$totalPlays', '$totalWin']},
+        "avgKill": {'$round': [ {'$divide':['$totalKill', '$totalPlays']}, 2]},
+        "avgDeath": {'$round': [ {'$divide':['$totalDeath', '$totalPlays']}, 2]},
+        "avgAssist": {'$round': [ {'$divide':['$totalAssist', '$totalPlays']}, 2]},
+        "avgKda": {
+          '$cond': [
+            { '$eq': ['$totalDeath', 0] }, 
+            0,
+            {'$round': [{'$divide':[{'$add': ['$totalKill','$totalAssist']},'$totalDeath']}, 3]}
+          ]
+        },
+        "winRate": {'$round': [{'$divide':['$totalWin','$totalPlays']}, 2]},
+      }
+    },
+    # 최종 처리
+    {
+      '$project': { 
+            "_id": 0,
+            "championId": '$_id.championId',
+            "championName": '$_id.championName',
+            "avgCs": 1,
+            "avgCsPerMinute": 1,
+            "totalPlays": 1,
+            "avgKill": 1,
+            "avgDeath": 1,
+            "avgAssist": 1,
+            "avgKda": 1,
+            "winRate": 1,
+            "totalWin": 1,
+            "totalDefeat": 1,
+            "totalKill": 1,
+            "totalDeath": 1,
+            "totalAssist": 1
       }
     }
   ]
@@ -147,29 +210,18 @@ def championAnalysis(db):
           
         except Exception:
             traceback.print_exc()
-        
   
   for result in results_total:
-    result["win_rate"] = round(result["total_wins"]/result["plays"], 2)
-    result["kda"] = "perfect" if result["deaths"]==0 else round((result["kills"]+result["assists"])/result["deaths"], 2)
-    result["championId"] = result["_id"]["championId"]
-    result["championName"] = result["_id"]["championName"]
     try:
-      
       result["bans"] = ban_list.get(result["championId"], 0)
     except Exception:
         traceback.print_exc()
     
-    # 밴률은 1.00을 넘길 수 있음 (각 팀마다 밴을 하기 때문에)
-    
-    result["ban_rate"] = round((result["bans"])/total_plays, 2)
-    result["pick_rate"] = round(result["plays"]/total_plays, 2)
-    del result["_id"]
+    result["banRate"] = round((result["bans"])/total_plays, 2)
     
     operations.append(UpdateOne({"championId":result["championId"]},{"$set":result},upsert=True))
 
   db["champion_statistics"].bulk_write(operations)
   
-  # return {"results_with_lane":results_with_lane, "results_total":results_total}
   return  
   
