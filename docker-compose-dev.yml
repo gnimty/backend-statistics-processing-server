@@ -9,9 +9,10 @@ services:
     #   dockerfile: Dockerfile # dockerfile : 도커파일 경로
     restart: unless-stopped
     ports:
-      - 5000:5000
+      - ${FLASK_RUN_PORT}:5000
     depends_on:
       - mongodb
+      - redis
     env_file:
       - .env
     environment:
@@ -21,11 +22,19 @@ services:
   # 몽고DB
   mongodb:
     image: mongo:6.0.4
-    container_name: mongodb
+    container_name: statistics-mongodb
     restart: always
     ports:
-      - 27017:27017
+      - ${MONGO_OUTER_PORT}:27017
     volumes:  
       - ./dev-data:/data/db # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
     env_file:
       - mongo.env
+
+  redis:
+    image: arm64v8/redis
+    container_name: statistics-redis
+    ports:
+      - ${REDIS_OUTER_PORT}:6379
+    volumes:
+      - ./dev-redis-data:/data

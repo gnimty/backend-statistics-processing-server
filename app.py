@@ -1,15 +1,12 @@
-import json
 import os, dotenv
-from bson import json_util
 from scheduler import start_schedule  # 스케줄러 로드
 
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
 from flask_request_validator import *  # parameter validate
-from flask import Flask, jsonify, request, url_for
+from flask import Flask
 
 from config.mongo import mongoClient
-from utils.summoner_name import makeInternalName
 
 from scheduler import start_schedule
 
@@ -20,6 +17,8 @@ import logging
 
 app = Flask(__name__)
 app.config.from_object(config[env])  # 기본 앱 환경 가져오기
+
+from config.redis import redisClient
 
 log_dir = './logs'  # 로그 남길 디렉토리 (없으면 자동으로 생성)
 if not os.path.exists(log_dir):
@@ -37,13 +36,11 @@ db_riot = mongoClient(app, app.config["MONGO_RIOTDATA_DB"])  # pymongo connectio
 db_stat = mongoClient(app, app.config["MONGO_STATISTICS_DB"])  # pymongo connection
 
 # Redis Connection
-# RedisClient.init(
-#       host = app.config.get("REDIS_HOST") or "localhost", 
-#       port = int(app.config.get("REDIS_PORT")) or 6379)
+rd = redisClient(app)
 
 from modules import summoner, league_entries, match, summoner_matches, summoner_plays
 from modules.analysis import champion as champion_analysis
-
+from modules import version, crawl 
 
 @app.route('/batch', methods=["POST"])
 def leagueEntriesBatch():
@@ -72,7 +69,7 @@ def matchBatch():  # 전적정보 배치 수행
   # 2. league_entries 안의 소환사 아이디를 돌아가면서 summoner_matches를 업데이트하기
   for puuid in puuids:
     
-    updateMatchesByPuuid(puuid) 
+    match.updateMatchesByPuuid(puuid, db_riot, api_limit=app.config["BATCH_LIMIT"])
 
   return {"status": "ok", "message": "전적 정보 배치가 완료되었습니다."}
 
@@ -116,7 +113,7 @@ def refreshSummonerInfo(puuid):
   
   summoner.updateSummoner(db_riot, summonerInfo, entry)
   
-  updateMatchesByPuuid(summonerInfo["puuid"], api_limit=app.config["API_REQUEST_LIMIT"])
+  match.updateMatchesByPuuid(summonerInfo["puuid"], app.config["API_REQUEST_LIMIT"])
   
   summoner.summonerRequestLimit(db_riot, puuid)
   
@@ -129,18 +126,18 @@ def generateChampionStatistics():
   return {"message":"통계정보 생성 완료"}
 
 
-def updateMatchesByPuuid(puuid, api_limit = app.config["BATCH_LIMIT"]):
-  matchIds = summoner_matches.getTotalMatchIds(db_riot, api_limit, puuid)
-  for matchId in matchIds:
-    try:
-      match.updateMatch(db_riot, db_stat, matchId, api_limit)
-    except Exception:
-      logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
+@app.route("/crawl/update", methods = ["POST"])
+def createCrawlData():
   
-  summoner_matches.updateSummonerMatches(db_riot, puuid, matchIds)  
-  summoner_plays.updateSummonerPlays(db_riot, puuid)
-  summoner.updateSummaries(db_riot, puuid)
+  version.updateLatestVersion(rd)
+  
+  version.updateChampionMap(db_riot, rd)
 
+  crawl.updateSaleInfos(db_riot)
+  
+  return {
+    "message":"챔피언 맵 정보 생성 완료"
+  }
 
 if env=="dev":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
@@ -170,7 +167,14 @@ if env=="dev":
       "time":{
         "hour": app.config["MATCH_BATCH_HOUR"]
       }
-    } 
+    },
+    {
+      "job":createCrawlData,
+      "method":"cron",
+      "time":{
+        "hour": 4
+      }
+    }
   ])
 
 
