@@ -62,4 +62,5 @@ jobs:
             sudo echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
             sudo echo "${{ secrets.DEV_COMPOSE_ENV }}" > docker-compose.env
             sudo docker-compose -f docker-compose-dev.yml --env-file docker-compose.env down -v
+            sudo docker pull ${{ secrets.DEV_DOCKER_REPO }}
             sudo docker-compose -f docker-compose-dev.yml --env-file docker-compose.env up -d --build
