@@ -5,6 +5,7 @@ from error import custom_exception
 from flask_api import status
 from utils import date_calc
 from modules.summoner import findHistoryByStdDate
+from modules import summoner_matches, summoner_plays, summoner
 
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
@@ -261,4 +262,17 @@ def updateParticipantSpells(db, limit):
     
     except Exception:
         logger.error("matchId = {} 에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
-      
+
+
+
+def updateMatchesByPuuid(puuid, db, api_limit):
+  matchIds = summoner_matches.getTotalMatchIds(db, api_limit, puuid)
+  for matchId in matchIds:
+    try:
+      updateMatch(db, None, matchId, api_limit)
+    except Exception:
+      logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
+  
+  summoner_matches.updateSummonerMatches(db, puuid, matchIds)  
+  summoner_plays.updateSummonerPlays(db, puuid)
+  summoner.updateSummaries(db, puuid)
