@@ -23,10 +23,6 @@ class Config:
   BATCH_LIMIT = int(os.environ.get("BATCH_LIMIT"))
   API_REQUEST_LIMIT = int(os.environ.get("API_REQUEST_LIMIT"))
   
-  REDIS_CHAMPION_MAP = int(os.environ.get("REDIS_CHAMPION_MAP"))
-  REDIS_VERSION = int(os.environ.get("REDIS_VERSION"))
-  CHROME_DRIVER_PATH = os.environ.get("CHROME_DRIVER_PATH")
-  
 class DevelopmentConfig(Config):
   MONGO_URI=f"mongodb://{Config.MONGO_USERNAME}:{Config.MONGO_PASSWORD}@{Config.MONGO_HOST}:{Config.MONGO_PORT}"
 
