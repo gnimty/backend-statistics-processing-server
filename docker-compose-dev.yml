@@ -45,4 +45,4 @@ services:
     image: seleniarm/standalone-chromium
     container_name: selenium
     ports:
-      - 4444:4444
+      - 4445:4444
