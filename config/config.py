@@ -23,6 +23,7 @@ class Config:
   BATCH_LIMIT = int(os.environ.get("BATCH_LIMIT"))
   API_REQUEST_LIMIT = int(os.environ.get("API_REQUEST_LIMIT"))
   
+  SELENIUM_EXECUTER = os.environ.get("SELENIUM_EXECUTER")
 class DevelopmentConfig(Config):
   MONGO_URI=f"mongodb://{Config.MONGO_USERNAME}:{Config.MONGO_PASSWORD}@{Config.MONGO_HOST}:{Config.MONGO_PORT}"
 

@@ -1,21 +1,26 @@
-import pymongo
 import logging
-import redis
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 logger = logging.getLogger("app")
 
 
-def updateSaleInfos(db):  # :pymongo.MongoClient
+def updateSaleInfos(app, db):  # :pymongo.MongoClient
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--single-process')
     chrome_options.add_argument('--disable-dev-shm-usage')
 
-    driver = webdriver.Chrome(options=chrome_options)
+    capabilities = DesiredCapabilities.CHROME
+    capabilities['goog:loggingPrefs'] = {'browser': 'ALL'}
+    
+    driver = webdriver.Remote(
+        command_executor=app.config["SELENIUM_EXECUTER"],  # Selenium 호스트 및 포트 설정
+        options=chrome_options
+    )
 
     driver.get(
         "https://store.leagueoflegends.co.kr/champions?sort=ReleaseDate&order=DESC")
@@ -119,3 +124,4 @@ def updateSaleInfos(db):  # :pymongo.MongoClient
     if len(data) != 0:
         db["skin_sales_info"].delete_many({})
         db["skin_sales_info"].insert_many(data)
+    driver.quit()

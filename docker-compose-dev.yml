@@ -13,6 +13,7 @@ services:
     depends_on:
       - mongodb
       - redis
+      - selenium
     env_file:
       - .env
     environment:
@@ -38,3 +39,10 @@ services:
       - ${REDIS_OUTER_PORT}:6379
     volumes:
       - ./dev-redis-data:/data
+
+  # standalone selenium
+  selenium:
+    image: seleniarm/standalone-chromium
+    container_name: selenium
+    ports:
+      - 4444:4444

@@ -133,7 +133,7 @@ def createCrawlData():
   
   version.updateChampionMap(db_riot, rd)
 
-  crawl.updateSaleInfos(db_riot)
+  crawl.updateSaleInfos(app, db_riot)
   
   return {
     "message":"챔피언 맵 정보 생성 완료"
@@ -179,6 +179,8 @@ if env=="dev":
 
 
 if __name__ == "__main__":
+  logger.info(f"SELENIUM_EXECUTER = {app.config['SELENIUM_EXECUTER']}")
+  
   app.run(
     host = app.config["FLASK_HOST"], 
     port=app.config["FLASK_PORT"],
