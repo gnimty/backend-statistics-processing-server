@@ -17,8 +17,8 @@ def updateChampionMap(db:pymongo.MongoClient, rd:redis.Redis, timeout:int = 10):
     en = champion["id"]
     kr = champion["name"]
     
-    rd.hset(id, "en", en)
-    rd.hset(id, "kr", kr)
+    rd.hset("en", id, en)
+    rd.hset("kr", id, kr)
   
   
   db["champion_info"].delete_many({})
@@ -30,7 +30,7 @@ def updateChampionMap(db:pymongo.MongoClient, rd:redis.Redis, timeout:int = 10):
     } for champion in champions_data.values()
   ])
 
-def updateLatestVersion(rd:redis.StrictRedis, timeout:int = 10):
+def updateLatestVersion(db, rd:redis.StrictRedis, timeout:int = 10):
   
   url = "https://ddragon.leagueoflegends.com/api/versions.json"
   response = requests.get(url,timeout=timeout)
@@ -38,5 +38,8 @@ def updateLatestVersion(rd:redis.StrictRedis, timeout:int = 10):
   versions = list(response.json())
 
   rd.set("version", versions[0])
+  
+  db["version"].delete_many({})
+  db["version"].insert_many([{"version":version, "order": i} for version, i in zip(versions, range(len(versions)))])
   
   

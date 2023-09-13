@@ -129,7 +129,7 @@ def generateChampionStatistics():
 @app.route("/crawl/update", methods = ["POST"])
 def createCrawlData():
   
-  version.updateLatestVersion(rd)
+  version.updateLatestVersion(db_riot, rd)
   
   version.updateChampionMap(db_riot, rd)
 
