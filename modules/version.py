@@ -3,9 +3,9 @@ import redis, requests, logging, pymongo
 logger = logging.getLogger("app")
 
 # r=redis.Redis(host='15.164.93.32',port=6379,charset="utf-8", decode_responses=True)#utf-8로 인코딩
-def updateChampionMap(db:pymongo.MongoClient, rd:redis.Redis, timeout:int = 10):
+def updateChampionMap(db:pymongo.MongoClient, rd:redis.Redis, latest_version, timeout:int = 10):
   
-  url = "https://ddragon.leagueoflegends.com/cdn/13.16.1/data/ko_KR/champion.json"
+  url = f"https://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
   response = requests.get(url,timeout=timeout)
   
   data=response.json()
@@ -41,5 +41,7 @@ def updateLatestVersion(db, rd:redis.StrictRedis, timeout:int = 10):
   
   db["version"].delete_many({})
   db["version"].insert_many([{"version":version, "order": i} for version, i in zip(versions, range(len(versions)))])
+  
+  return versions[0]
   
   
