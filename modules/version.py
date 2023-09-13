@@ -24,7 +24,7 @@ def updateChampionMap(db:pymongo.MongoClient, rd:redis.Redis, timeout:int = 10):
   db["champion_info"].delete_many({})
   db["champion_info"].insert_many([
     {
-      "id" : champion["key"],
+      "championId" : champion["key"],
       "en" : champion["id"],
       "kr" : champion["name"]
     } for champion in champions_data.values()
