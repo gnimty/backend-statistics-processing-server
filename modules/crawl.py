@@ -71,7 +71,7 @@ def updateSaleInfos(app, db):  # :pymongo.MongoClient
 
         if target_champion_info:
             result["name_en"] = target_champion_info[0]["en"]
-            result["champion_id"] = target_champion_info[0]["id"]
+            result["championId"] = target_champion_info[0]["championId"]
 
         data.append(result)
         num += 1
