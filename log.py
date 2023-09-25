@@ -47,29 +47,29 @@ else:
 logger.setLevel(level)
 logger.propagate=False
 
-time_rotating_handler = MyTimedRotatingFileHandler(
-  dir_log = "./logs" + os.sep, when=LOGGING_WHEN, 
-)
+# time_rotating_handler = MyTimedRotatingFileHandler(
+#   dir_log = "./logs" + os.sep, when=LOGGING_WHEN, 
+# )
 format = logging.Formatter('%(asctime)s [%(name)8s] [%(thread)d] [%(funcName)18s:%(module)14s] %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-time_rotating_handler.setFormatter(format)
-time_rotating_handler.setLevel(level)
-time_rotating_handler.namer = lambda name : name + ".log"
+# time_rotating_handler.setFormatter(format)
+# time_rotating_handler.setLevel(level)
+# time_rotating_handler.namer = lambda name : name + ".log"
 
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(format)
 console_handler.setLevel(level)
 console_handler.namer = lambda name : name + ".log"
 
-logger.addHandler(time_rotating_handler)
+# logger.addHandler(time_rotating_handler)
 logger.addHandler(console_handler)
 
 
 flask_logger = logging.getLogger("werkzeug")
 flask_logger.setLevel(level)
 flask_logger.propagate=False
-flask_logger.addHandler(time_rotating_handler)
+# flask_logger.addHandler(time_rotating_handler)
 flask_logger.addHandler(console_handler)
 
-def appLogger():
+def get_logger():
   return logger

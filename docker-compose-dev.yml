@@ -18,8 +18,8 @@ services:
       - .env
     environment:
       - TZ=Asia/Seoul
-    volumes:  
-      - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+    # volumes:  
+      # - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
   # 몽고DB
   mongodb:
     image: mongo:6.0.4

@@ -24,9 +24,9 @@ class Config:
   API_REQUEST_LIMIT = int(os.environ.get("API_REQUEST_LIMIT"))
   
   SELENIUM_EXECUTER = os.environ.get("SELENIUM_EXECUTER")
+  
 class DevelopmentConfig(Config):
   MONGO_URI=f"mongodb://{Config.MONGO_USERNAME}:{Config.MONGO_PASSWORD}@{Config.MONGO_HOST}:{Config.MONGO_PORT}"
-
 
 class ProductionConfig(Config):
   MONGO_URI=f"mongodb://{Config.MONGO_USERNAME}:{Config.MONGO_PASSWORD}@{Config.MONGO_HOST}:{Config.MONGO_PORT}/{Config.MONGO_ADMIN_DB}"
@@ -34,4 +34,4 @@ class ProductionConfig(Config):
 class LocalConfig(Config):
   MONGO_URI=f"mongodb://{Config.MONGO_HOST}:{Config.MONGO_PORT}"
 
-config = dict(dev=DevelopmentConfig, prod=ProductionConfig, local = LocalConfig)
+current_config = dict(dev=DevelopmentConfig, prod=ProductionConfig, local = LocalConfig).get(os.environ.get("APP_ENV") or "local")

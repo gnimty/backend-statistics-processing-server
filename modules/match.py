@@ -1,21 +1,21 @@
-
 from riot_requests import match_v4
-import logging
-from error import custom_exception
-from flask_api import status
+from log import get_logger
 from utils import date_calc
-from modules.summoner import findHistoryByStdDate
+from modules.summoner import find_history_by_std_date
 from modules import summoner_matches, summoner_plays, summoner
+from config.mongo import Mongo
 
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
 # _id까지 보내주는 dump_utils 사용하거나 다시 db에서 조회하는 방법으로 가야 할듯
 # 우선은 직접 제거
 
-logger = logging.getLogger("app")
-col = "matches"
+logger = get_logger()
 
-def updateMatch(db, raw_db, matchId, limit: int):
+col = "matches"
+db = Mongo.get_client("riot")
+
+def updateMatch(match_id, limit):
   """
   특정 matchId로 match, teams, participants 업데이트 후 결과 반환
 
@@ -34,12 +34,14 @@ def updateMatch(db, raw_db, matchId, limit: int):
         participants
       }
   """
- 
-  
-  match = db["matches"].find_one({"matchId":matchId}, {"_id":0})
-  
+
+  match = db[col].find_one(
+      {"matchId": match_id},
+      {"_id": 0}
+  )
+
   if not match: # DB에 match info가 이미 존재하면 업데이트 안함
-    data = match_v4.getMatchAndTimeline(matchId, limit)
+    data = match_v4.get_by_match_id(match_id, limit)
     
     result = data["result"]
     result_timeline = data["result_timeline"]
@@ -55,7 +57,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
     # timeline에서 얻은 정보
     timelines = {}
     match = {
-      "matchId" : matchId,
+      "matchId" : match_id,
       "gameStartAt": date_calc.timeStampToDateTime(str(info["gameStartTimestamp"])),
       "gameDuration": int(info["gameDuration"]),
       "queueId": int(info["queueId"]),
@@ -63,14 +65,14 @@ def updateMatch(db, raw_db, matchId, limit: int):
         date_calc.timeStampToDateTime(str(info["gameEndTimestamp"])) 
         if "gameEndTimestamp" in info 
         else date_calc.timeStampToDateTime(str(info["gameStartTimestamp"] + 1000*info["gameDuration"])) ,
-      "version": shortGameVersion(info["gameVersion"]),
+      "version": short_game_version(info["gameVersion"]),
       "fullVersion": info["gameVersion"],
       "earlyEnded": False
     }
     
     for team in info["teams"]:
       info_teams.append({
-        "matchId" : matchId,
+        "matchId" : match_id,
         "teamId":team["teamId"],
         "win":team["win"],
         "bans":team["bans"],
@@ -115,7 +117,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
       else:
         win="false"
         
-      history = findHistoryByStdDate(db,participant["puuid"], match["gameStartAt"])
+      history = find_history_by_std_date(participant["puuid"], match["gameStartAt"])
       # 같이 플레이한 다른 소환사들의 matches 리스트를 업데이트 
       # updateSummonerMatches(db, participant["puuid"], matchId)
       
@@ -124,7 +126,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
         match["earlyEnded"] = True
         
       info_participants.append({
-        "matchId" : matchId,
+        "matchId" : match_id,
         "teamId":participant["teamId"],
         "puuid":participant["puuid"],
         "participantId":participant["participantId"],
@@ -169,7 +171,7 @@ def updateMatch(db, raw_db, matchId, limit: int):
     
     for initial_timeline_info in result_timeline["info"]["participants"]:
       timelines[initial_timeline_info["participantId"]]={
-        "matchId":matchId,
+        "matchId":match_id,
         "puuid": initial_timeline_info["puuid"],
         "participantId":initial_timeline_info["participantId"],
         "itemBuild":{},
@@ -212,67 +214,25 @@ def updateMatch(db, raw_db, matchId, limit: int):
     db["teams"].insert_many(info_teams)
     db["participants"].insert_many(info_participants)
     
-def shortGameVersion(version):
-  return ".".join(version.split(".")[:2])
 
-def findAllMatchIds(db):
-  return list(db[col].find({}, {"_id":0, "matchId":1}))
+
+def update_matches_by_puuid(puuid, limit=None):
+  match_ids = summoner_matches.getTotalMatchIds(puuid, limit)
   
-def updateParticipantSpells(db, limit):
-  
-  for matchId in [item["matchId"] for item in findAllMatchIds(db)]:
+  for match_id in match_ids:
     try:
-      result = match_v4.getMatch(matchId, limit)["result"]
-      
-      origin_participants = db["participants"].find({"matchId":matchId})
-      origin_teams = list(db["teams"].find({"matchId":matchId}).sort("teamId"))
-      
-      new_participants = [{"participantId":p["participantId"], "spellDId":p["summoner1Id"], "spellFId":p["summoner2Id"]} for p in result["info"]["participants"]]
-      new_teams = {item["teamId"]: item["objectives"]["riftHerald"]["kills"] for item in result["info"]["teams"]}
-      
-      
-      origin_participants_dict = {item["participantId"]: item for item in origin_participants}
-      new_participants_dict = {item["participantId"]: item for item in new_participants}
-
-      # 1. participant spell 정보 업데이트
-      
-      for id_value in set(origin_participants_dict.keys()):
-        merged_dict = {}
-        merged_dict.update(origin_participants_dict[id_value])
-        merged_dict.update(new_participants_dict[id_value])
-        db["participants"].update_one(
-            {"matchId": matchId,
-             "participantId": merged_dict["participantId"]},
-            {"$set": merged_dict}, True)
-
-      # 2. team riftHerald 정보 업데이트
-
-      # teamId: 100
-      origin_teams[0].update({"riftHerald": new_teams[100]})
-      # teamId: 200
-      origin_teams[1].update({"riftHerald": new_teams[200]})
-
-      db["teams"].update_one(
-          {"matchId": matchId, "teamId": 100},
-          {"$set": origin_teams[0]}, True)
-
-      db["teams"].update_one(
-          {"matchId": matchId, "teamId": 200},
-          {"$set": origin_teams[1]}, True)
-    
+      updateMatch(match_id, limit)
     except Exception:
-        logger.error("matchId = {} 에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
-
-
-
-def updateMatchesByPuuid(puuid, db, api_limit):
-  matchIds = summoner_matches.getTotalMatchIds(db, api_limit, puuid)
-  for matchId in matchIds:
-    try:
-      updateMatch(db, None, matchId, api_limit)
-    except Exception:
-      logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
+      logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
   
-  summoner_matches.updateSummonerMatches(db, puuid, matchIds)  
-  summoner_plays.updateSummonerPlays(db, puuid)
-  summoner.updateSummaries(db, puuid)
+  # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
+  summoner_matches.update_by_puuid(puuid, match_ids)  
+  summoner_plays.update_by_puuid(puuid)
+  summoner.update_summary(puuid)
+  
+def short_game_version(version):
+  split = version.split(".")[:3]
+  if len(split)>=3:
+    split[2] = split[2][0]
+  
+  return ".".join(split)

@@ -1,18 +1,12 @@
 from riot_requests import league_exp_v4
-from error.custom_exception import DataNotExists, RequestDataNotExists
-from modules import summoner
-from utils.date_calc import lastModifiedFromNow
 import logging
+from modules import summoner
+from error.custom_exception import RequestDataNotExists
 
 logger = logging.getLogger("app")
 
-col = "league_entries"
-
-def updateAll(db, limit):
-  """리그 엔트리 정보 모두 업데이트
-
-  Args:
-      db (connection)
+def update_all() -> int:
+  """소환사 랭킹 정보 모두 업데이트
 
   Raises:
       RequestDataNotExists: 요청 데이터 정보가 존재하지 않을 때
@@ -20,23 +14,23 @@ def updateAll(db, limit):
   Returns:
       lengthOfEntries(int)
   """
+
   entries = []
-  
-  entries.extend(league_exp_v4.get_specific_league("challengerleagues", limit))
-  entries.extend(league_exp_v4.get_specific_league("grandmasterleagues", limit))
-  entries.extend(league_exp_v4.get_specific_league("masterleagues", limit))
-  
-  rank = 1 # 순위 정보 추가
+
+  # TODO 이후 master 하위 리그까지 전부 업데이트해야 함
+  entries.extend(league_exp_v4.get_top_league("challengerleagues"))
+  entries.extend(league_exp_v4.get_top_league("grandmasterleagues"))
+  entries.extend(league_exp_v4.get_top_league("masterleagues"))
+
   for entry in entries:
-    entry["rank"] = rank
-    summoner.updateBySummonerBrief(db, entry, limit)
-    rank += 1
+    summoner.update_by_summoner_brief(entry)
 
-  if len(entries) == 0:
-    raise RequestDataNotExists("Riot Api 요청 정보가 존재하지 않습니다.")
+  updated_cnt = len(entries)
 
-  # db[col].delete_many({}) # db에 넣기 전 league_entires collection 비우기
-  # db[col].insert_many(entries, ordered=True)
+  if updated_cnt == 0:
+    raise RequestDataNotExists("Riot API 응답 데이터가 존재하지 않습니다.")
 
-  logger.info("성공적으로 %s명의 엔트리 정보를 업데이트했습니다.", len(entries))
-  return len(entries)
+  return updated_cnt
+
+def get_summoner_by_id(summoner_id, limit=None):
+  return league_exp_v4.get_summoner_by_id(summoner_id, limit = limit)

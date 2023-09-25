@@ -1,13 +1,14 @@
-import logging
-
+import log
+from config.mongo import Mongo
+from config.config import current_config as config
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
-logger = logging.getLogger("app")
+logger = log.get_logger()
+db = Mongo.get_client("riot")
 
-
-def updateSaleInfos(app, db):  # :pymongo.MongoClient
+def update_sale_info():
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
@@ -18,7 +19,7 @@ def updateSaleInfos(app, db):  # :pymongo.MongoClient
     capabilities['goog:loggingPrefs'] = {'browser': 'ALL'}
     
     driver = webdriver.Remote(
-        command_executor=app.config["SELENIUM_EXECUTER"],  # Selenium 호스트 및 포트 설정
+        command_executor=config.SELENIUM_EXECUTER,  # Selenium 호스트 및 포트 설정
         options=chrome_options
     )
 
