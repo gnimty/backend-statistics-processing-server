@@ -1,12 +1,15 @@
-import logging
+import log
 from pymongo import UpdateOne
+from config.mongo import Mongo
 import traceback
+
 # position, champion_id, champion_name, plays, avg_score(kda), win_rate, ban_rate, cs, gold
 # win_rate와 ban_rate 정보를 가져오기 위해서 추가적으로 teams와 matches를 가져와야 함
 
-logger = logging.getLogger("app")
+logger = log.get_logger()
+db = Mongo.get_client("riot")
 
-def championAnalysis(db):
+def championAnalysis():
   # 1. total_plays 구하기
   total_plays = len(list(db["matches"].find({"gameDuration":{ "$gte" : 300 }})))
   # 2. champion_id, position으로 분류하기

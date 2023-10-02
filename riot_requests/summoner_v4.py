@@ -1,8 +1,9 @@
-import os
 from error.custom_exception import *
-from riot_requests.common import delayableRequest
+from riot_requests.common import delayable_request
+import log
+logger = log.get_logger()
 
-def requestSummonerById(summonerId, limit):
+def get_by_summoner_id(summoner_id):
   """
   summonerId로 Summoner 정보 가져오기\n
   1600 requests every 1 minutes\n
@@ -12,11 +13,11 @@ def requestSummonerById(summonerId, limit):
   Returns:
       Summoner: 소환사 정보
   """
-  
-  result = requestSummoner(limit,summonerId=summonerId)
-  return result
 
-def requestSummonerByName(summonerName, limit):
+  return get_summoner(summoner_id=summoner_id)
+
+
+def get_by_summoner_name(summonerName, limit):
   """
   summonerName으로 Summoner 정보 가져오기\n
   1600 requests every 1 minutes\n
@@ -26,27 +27,27 @@ def requestSummonerByName(summonerName, limit):
   Returns:
       Summoner : 소환사 정보
   """
-  result = requestSummoner(limit, summonerName=summonerName)
-  
+  result = get_summoner(limit, summoner_name=summonerName)
+
   return result
 
-def requestBySummonerPuuid(puuid, limit):
-  
 
+def get_by_puuid(puuid, limit):
   if not puuid:
     raise AttributeError(f"{__name__}의 인자를 잘못 넘겼습니다.")
 
   url = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
-  result = delayableRequest(url, 20, limit)
-  
+  result = delayable_request(url, limit)
+
   if "id" not in result:
     return None
-  
-  del(result["accountId"]) # 필요 없는 properties 제거
-  
+
+  del (result["accountId"])  # 필요 없는 properties 제거
+
   return result
-  
-def requestSummoner(limit, summonerName=None, summonerId=None):
+
+
+def get_summoner(summoner_name=None, summoner_id=None):
   """summonerName 또는 summoner Id로 Summoner 정보 가져오기
   둘 중 하나의 인자라도 주어져야 하며 summonerName이 주어지면 summonerId는 무시됨
   
@@ -72,21 +73,18 @@ def requestSummoner(limit, summonerName=None, summonerId=None):
 
   url = "https://kr.api.riotgames.com/lol/summoner/v4/summoners/"
 
-  if summonerName: # 소환사 이름으로 조회
-    url = url+f"by-name/{summonerName}"
-  elif summonerId: # 소환사 아이디로 조회
-    url = url+summonerId
+  if summoner_name:  # 소환사 이름으로 조회
+    url = url+f"by-name/{summoner_name}"
+  elif summoner_id:  # 소환사 아이디로 조회
+    url = url+summoner_id
   else:
     raise AttributeError(f"{__name__}의 인자를 잘못 넘겼습니다.")
 
-  result = delayableRequest(url, 20, limit)
-  
+  result = delayable_request(url)
+
   if "id" not in result:
     return None
-  
-  del(result["accountId"]) # 필요 없는 properties 제거
-  
+
+  del (result["accountId"])  # 필요 없는 properties 제거
+
   return result
-
-
-

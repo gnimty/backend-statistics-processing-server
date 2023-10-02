@@ -1,14 +1,19 @@
-from riot_requests import summoner_v4, league_exp_v4
-from error.custom_exception import DataNotExists
+from riot_requests import summoner_v4
 from datetime import datetime
-import logging
-from utils.date_calc import lastModifiedFromNow
 from utils.summoner_name import makeInternalName
 from modules.TierDivisionMMR import MMR
-from modules.summoner_plays import updateMostChampions
+from modules.summoner_plays import find_recent_champions
+from config.mongo import Mongo
 
-logger = logging.getLogger("app")
+import log
+logger = log.get_logger()
+
 col = "summoners"
+col_history = "summoner_history"
+
+db_riot = Mongo.get_client("riot")
+db_stats = Mongo.get_client("stat")
+
 division = {
   "I":1,
   "II":2,
@@ -16,13 +21,13 @@ division = {
   "IV":4
 }
 
-def findAllSummonerPuuid(db):
-  puuids = list(db[col].find({}, {"_id":0, "puuid":1}))
+def find_all_puuids() -> list:
+  puuids = list(db_riot[col].find({}, {"_id":0, "puuid":1}))
   
   return [s['puuid'] for s in puuids if 'puuid' in s]
 
 
-def findBySummonerId(db, summonerId):
+def find_one_by_summoner_id(summoner_id, test = False):
   """소환사 ID로 소환사 정보 조회
 
   Args:
@@ -32,8 +37,13 @@ def findBySummonerId(db, summonerId):
   Returns:
       summoner
   """
-  summoner = db[col].find_one(
-    {'id': summonerId},
+  if test:
+    target_db = db_stats
+  else:
+    target_db = db_riot
+  
+  summoner = target_db[col].find_one(
+    {'id': summoner_id},
     {"_id": 0, "accountId": 0})
 
   if not summoner:
@@ -42,40 +52,41 @@ def findBySummonerId(db, summonerId):
   return summoner
 
 
-def updateBySummonerPuuid(db, puuid, limit):
-  summoner = findSummonerByPuuid(db, puuid)
+def update_by_puuid(puuid):
+  summoner = find_by_puuid(puuid)
   
-  new_summoner = summoner_v4.requestBySummonerPuuid(puuid, limit)
+  new_summoner = summoner_v4.get_by_puuid(puuid)
   
-  updateSummoner(db, summoner or new_summoner, new_summoner)
+  update(db_riot, summoner or new_summoner, new_summoner)
 
 
-def updateBySummonerBrief(db, summoner_brief, limit):
-  updateSummoner(
-      db,
-      findBySummonerId(db, summoner_brief["summonerId"]) or
-      summoner_v4.requestSummonerById(summoner_brief["summonerId"], limit), summoner_brief)
-
-
-def findSummonerRankInfoBySummonerId(summonerId, limit):
-  return league_exp_v4.get_summoner_by_id(summonerId, limit)
+# 이부분 코드 완전히 개선해야 함
+def update_by_summoner_brief(summoner_brief, test = False)->str:
+  summoner = find_one_by_summoner_id(summoner_brief["summonerId"], test) or summoner_v4.get_by_summoner_id(summoner_brief["summonerId"])
   
+  update(summoner, summoner_brief, test)
+  return summoner["puuid"]
   
-def findSummonerByPuuid(db, puuid):
-  summoner = db[col].find_one(
+
+def find_by_puuid(puuid):
+  summoner = db_riot[col].find_one(
     {"puuid": puuid}, 
     {"_id": 0, "accountId": 0})
 
   return summoner
 
 
-def updateSummoner(db, summoner, summoner_brief):
+def update(summoner, summoner_brief, test=False):
   """summoner 정보 업데이트 및 history collection 업데이트
 
   Args:
       summoner: 현재 정보
       summoner_brief: 조회한 최신 entry 정보
   """
+  if test:
+    target_db = db_stats
+  else:
+    target_db = db_riot
   
   if not summoner:
     return None
@@ -95,7 +106,7 @@ def updateSummoner(db, summoner, summoner_brief):
   summoner["mmr"] = MMR[summoner["queue"]].value + int(summoner["leaguePoints"])\
   
   # history list 존재하면 갖다 붙이고 없으면 새로 생성
-  summoner_history = findSummonerHistories(db, summoner["puuid"])
+  summoner_history = find_history(summoner["puuid"], test)
   
   if not summoner_history or not summoner_history.get("history"):
     summoner_history = {
@@ -116,12 +127,12 @@ def updateSummoner(db, summoner, summoner_brief):
       "updatedAt":summoner["updatedAt"],
     })
     
-  db[col].update_one(
+  target_db[col].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner},
       True)
   
-  db["summoner_history"].update_one(
+  target_db[col_history].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner_history},
       True)
@@ -129,12 +140,18 @@ def updateSummoner(db, summoner, summoner_brief):
   return summoner
 
 
-def findSummonerHistories(db, puuid):
-  return db["summoner_history"].find_one({"puuid":puuid})
+def find_history(puuid, test = False):
+  
+  if test:
+    target_db = db_stats
+  else:
+    target_db = db_riot
+    
+  return target_db[col_history].find_one({"puuid":puuid})
   
 
-def findHistoryByStdDate(db, puuid, stdDate):
-  summoner_history = findSummonerHistories(db, puuid)
+def find_history_by_std_date(puuid, stdDate):
+  summoner_history = find_history(puuid)
   
   if not summoner_history or "history" not in summoner_history:
     return {
@@ -162,15 +179,15 @@ def mmrFix(db):
       {"$set": summoner},
       True)
     
-def summonerRequestLimit(db, puuid):
-  summoner = db[col].find_one({"puuid":puuid})
+def update_renewable_time(puuid):
+  summoner = db_riot[col].find_one({"puuid":puuid})
   
   # TODO 여기 나중에 예외처리
   if not summoner:
     return 
   
   summoner["updatedAt"] = datetime.now()
-  db[col].update_one(
+  db_riot[col].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner},
       True)
@@ -190,7 +207,7 @@ def moveHistoryFields(db):
         "history": summoner["history"]
       }
       
-      db["summoner_history"].update_one(
+      db[col_history].update_one(
         {"puuid": summoner["puuid"]},
         {"$set": summoner_history},
       True)
@@ -200,11 +217,21 @@ def moveHistoryFields(db):
         {"$unset": {"history":""}})
       
 
-def updateSummaries(db, puuid):
-  summoner = findSummonerByPuuid(db, puuid)
+def update_summary(puuid):
+  summoner = find_by_puuid(puuid)
   
   if not summoner:
     return
+  
+  summoner["mostLanes"] = find_recent_lane(puuid)
+  summoner["mostChampionIds"] = find_recent_champions(puuid)
+  
+  db_riot[col].update_one(
+    {"puuid": summoner["puuid"]},
+    {"$set":summoner},
+    True)
+  
+def find_recent_lane(puuid):
   
   # 1. summonerMatches에서 최근 20개의 gameId를 가져오기
   pipeline_lane = [
@@ -228,13 +255,6 @@ def updateSummaries(db, puuid):
       "_id":0
     }}
   ]
-  aggregated = list(db["participants"].aggregate(pipeline_lane))
+  aggregated = list(db_riot["participants"].aggregate(pipeline_lane))
   
-  summoner["mostLanes"] = [r["lane"] for r in aggregated][:3]
-  
-  summoner["mostChampionIds"] = updateMostChampions(db, puuid)
-  
-  db[col].update_one(
-    {"puuid": summoner["puuid"]},
-    {"$set":summoner},
-    True)
+  return [r["lane"] for r in aggregated][:3]

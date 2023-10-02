@@ -1,8 +1,19 @@
-import redis
+from redis import Redis as RedisClient
+from config.config import current_config as config
 
-def redisClient(app):
-  return redis.Redis(
-    host = app.config["REDIS_HOST"],
-    port = app.config["REDIS_PORT"],
-    charset = "utf-8",
-    decode_responses = True)
+
+class Redis:
+  redisClient = None
+
+  @classmethod
+  def set_client(cls) -> None:
+    cls.redisClient = RedisClient(
+        host=config.REDIS_HOST,
+        port=config.REDIS_PORT,
+        charset="utf-8",
+        decode_responses=True
+    )
+    
+  @classmethod
+  def get_client(cls) -> RedisClient:
+    return cls.redisClient

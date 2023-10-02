@@ -1,12 +1,13 @@
-import os
+
 from error import custom_exception
 from flask_api import status
-from riot_requests.common import delayableRequest
-import logging
+from riot_requests.common import delayable_request
+import log
 
-logger = logging.getLogger("app")
+logger = log.get_logger()
 
-def get_specific_league(league, limit, queue="RANKED_SOLO_5x5"):
+
+def get_top_league(league, queue="RANKED_SOLO_5x5"):
   """
   해당 league에 존재하는 모든 소환사 정보 가져오기\n
   50 requests every 10 seconds
@@ -30,44 +31,63 @@ def get_specific_league(league, limit, queue="RANKED_SOLO_5x5"):
         summonerId (string),
       }
   """
-  if league not in ["challengerleagues", "grandmasterleagues","masterleagues"]:
+  if league not in ["challengerleagues", "grandmasterleagues", "masterleagues"]:
     return []
-  
+
   url = f"https://kr.api.riotgames.com/lol/league/v4/{league}/by-queue/{queue}"
 
-  ## delayable
-  result = delayableRequest(url, 10, limit)
+  result = delayable_request(url)
   entries = result["entries"]
-  
+
   if not entries or not isinstance(entries, list):
     raise custom_exception.CustomUserError(
-      "리그 엔트리 정보를 가져오는 데 실패했습니다.", 
-      "Result of request to Riot not exists", status.HTTP_404_NOT_FOUND )
+        "리그 엔트리 정보를 가져오는 데 실패했습니다.",
+        "Result of request to Riot not exists", status.HTTP_404_NOT_FOUND)
 
   # TODO - 요구사항 확장 시 이부분은 고쳐야함
-  entries.sort(key = lambda x : x["leaguePoints"], reverse=True)
-  
+  entries.sort(key=lambda x: x["leaguePoints"], reverse=True)
+
   # 티어, 큐 업데이트
   for entry in entries:
     entry["queue"] = league[:-7]
     entry["tier"] = entry["rank"]
     entry["metadata"] = {
-      "id":entry["summonerId"],
+        "id": entry["summonerId"],
     }
-  
-  
+
   return entries
 
 
-def get_summoner_by_id(encryptedSummonerId, limit):
+def get_summoner_by_id(summoner_id, limit=None):
 
-  url = f"https://kr.api.riotgames.com/lol/league/v4/entries/by-summoner/{encryptedSummonerId}"
-
-  ## delayable
-  results = delayableRequest(url, 10, limit)
+  url = f"https://kr.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}"
   
-  condition = lambda r: r["queueType"]== "RANKED_SOLO_5x5"
-  result = next((item for item in results if condition(item)), None)
-  
+  # 가져온 소환사 정보 중 솔로 랭크에 해당하는 정보만 가져오기, 없으면 None
+  result = next((item for item in delayable_request(url, limit=limit) if item["queueType"] == "RANKED_SOLO_5x5"), None)
 
   return result
+
+
+def get_summoners_under_master(tier, division):
+  results = []
+  
+  page = 1
+  
+  while True:  
+    url = f"https://kr.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/{tier}/{division}?page={page}"
+    result = delayable_request(url)
+    if not result or not isinstance(result, list) or len(result)==0:
+      break
+    
+    results.extend(result)
+    page+=1
+  
+  for result in results:
+    result["queue"] = str(result["tier"]).lower()
+    result["tier"] = result["rank"]
+    result["metadata"] = {
+        "id": result["summonerId"],
+    }
+  
+  return results
+  

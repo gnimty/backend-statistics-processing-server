@@ -1,8 +1,10 @@
 from error.custom_exception import *
+from config.mongo import Mongo
 
 col = "summoner_plays"
+db = Mongo.get_client("riot")
 
-def updateSummonerPlays(db, puuid):
+def update_by_puuid(puuid):
   pipeline = [
     # puuid와 일치하는 participants 정보 가져오기
     {
@@ -88,7 +90,7 @@ def updateSummonerPlays(db, puuid):
       True
     )
   
-def updateMostChampions(db, puuid):
+def find_recent_champions(puuid):
   pipeline_champion =  [
     {
       "$match":{
@@ -115,7 +117,4 @@ def updateMostChampions(db, puuid):
   
   result  = [r["championId"] for r in aggregated]
   
-  return result
-  
-  
-                    
+  return result                    
