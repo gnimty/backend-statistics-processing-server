@@ -11,7 +11,8 @@ logger = log.get_logger()
 col = "summoners"
 col_history = "summoner_history"
 
-db = Mongo.get_client("riot")
+db_riot = Mongo.get_client("riot")
+db_stats = Mongo.get_client("stat")
 
 division = {
   "I":1,
@@ -21,12 +22,12 @@ division = {
 }
 
 def find_all_puuids() -> list:
-  puuids = list(db[col].find({}, {"_id":0, "puuid":1}))
+  puuids = list(db_riot[col].find({}, {"_id":0, "puuid":1}))
   
   return [s['puuid'] for s in puuids if 'puuid' in s]
 
 
-def find_one_by_summoner_id(summoner_id):
+def find_one_by_summoner_id(summoner_id, test = False):
   """소환사 ID로 소환사 정보 조회
 
   Args:
@@ -36,8 +37,12 @@ def find_one_by_summoner_id(summoner_id):
   Returns:
       summoner
   """
+  if test:
+    target_db = db_stats
+  else:
+    target_db = db_riot
   
-  summoner = db[col].find_one(
+  summoner = target_db[col].find_one(
     {'id': summoner_id},
     {"_id": 0, "accountId": 0})
 
@@ -52,31 +57,36 @@ def update_by_puuid(puuid):
   
   new_summoner = summoner_v4.get_by_puuid(puuid)
   
-  update(db, summoner or new_summoner, new_summoner)
+  update(db_riot, summoner or new_summoner, new_summoner)
 
 
 # 이부분 코드 완전히 개선해야 함
-def update_by_summoner_brief(summoner_brief):
-  summoner = find_one_by_summoner_id(summoner_brief["summonerId"]) or summoner_v4.get_by_summoner_id(summoner_brief["summonerId"])
+def update_by_summoner_brief(summoner_brief, test = False)->str:
+  summoner = find_one_by_summoner_id(summoner_brief["summonerId"], test) or summoner_v4.get_by_summoner_id(summoner_brief["summonerId"])
   
-  update(summoner, summoner_brief)
+  update(summoner, summoner_brief, test)
+  return summoner["puuid"]
   
 
 def find_by_puuid(puuid):
-  summoner = db[col].find_one(
+  summoner = db_riot[col].find_one(
     {"puuid": puuid}, 
     {"_id": 0, "accountId": 0})
 
   return summoner
 
 
-def update(summoner, summoner_brief):
+def update(summoner, summoner_brief, test=False):
   """summoner 정보 업데이트 및 history collection 업데이트
 
   Args:
       summoner: 현재 정보
       summoner_brief: 조회한 최신 entry 정보
   """
+  if test:
+    target_db = db_stats
+  else:
+    target_db = db_riot
   
   if not summoner:
     return None
@@ -96,7 +106,7 @@ def update(summoner, summoner_brief):
   summoner["mmr"] = MMR[summoner["queue"]].value + int(summoner["leaguePoints"])\
   
   # history list 존재하면 갖다 붙이고 없으면 새로 생성
-  summoner_history = find_history(summoner["puuid"])
+  summoner_history = find_history(summoner["puuid"], test)
   
   if not summoner_history or not summoner_history.get("history"):
     summoner_history = {
@@ -117,12 +127,12 @@ def update(summoner, summoner_brief):
       "updatedAt":summoner["updatedAt"],
     })
     
-  db[col].update_one(
+  target_db[col].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner},
       True)
   
-  db[col_history].update_one(
+  target_db[col_history].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner_history},
       True)
@@ -130,8 +140,14 @@ def update(summoner, summoner_brief):
   return summoner
 
 
-def find_history(puuid):
-  return db[col_history].find_one({"puuid":puuid})
+def find_history(puuid, test = False):
+  
+  if test:
+    target_db = db_stats
+  else:
+    target_db = db_riot
+    
+  return target_db[col_history].find_one({"puuid":puuid})
   
 
 def find_history_by_std_date(puuid, stdDate):
@@ -164,14 +180,14 @@ def mmrFix(db):
       True)
     
 def update_renewable_time(puuid):
-  summoner = db[col].find_one({"puuid":puuid})
+  summoner = db_riot[col].find_one({"puuid":puuid})
   
   # TODO 여기 나중에 예외처리
   if not summoner:
     return 
   
   summoner["updatedAt"] = datetime.now()
-  db[col].update_one(
+  db_riot[col].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner},
       True)
@@ -210,7 +226,7 @@ def update_summary(puuid):
   summoner["mostLanes"] = find_recent_lane(puuid)
   summoner["mostChampionIds"] = find_recent_champions(puuid)
   
-  db[col].update_one(
+  db_riot[col].update_one(
     {"puuid": summoner["puuid"]},
     {"$set":summoner},
     True)
@@ -239,6 +255,6 @@ def find_recent_lane(puuid):
       "_id":0
     }}
   ]
-  aggregated = list(db["participants"].aggregate(pipeline_lane))
+  aggregated = list(db_riot["participants"].aggregate(pipeline_lane))
   
   return [r["lane"] for r in aggregated][:3]

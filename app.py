@@ -35,6 +35,14 @@ def summoner_rank_batch():
       updatedCnt(int) : 랭크 업데이트한 유저 수 
   """
   updated_cnt = league_entries.update_all()
+  # updated_cnt = league_entries.update_total_summoner()
+  
+  return {"status": "ok", "updatedCnt": updated_cnt}
+
+@app.route('/batch/test', methods=["POST"])
+def summoner_rank_batch_test():
+  # updated_cnt = league_entries.update_all()
+  updated_cnt = league_entries.update_total_summoner()
   
   return {"status": "ok", "updatedCnt": updated_cnt}
 
@@ -126,31 +134,38 @@ if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
   start_schedule([
-    # [SUMMONER_BATCH_HOUR]시간마다 소환사 정보 배치
     {
-      "job":summoner_rank_batch,
+      "job":summoner_rank_batch_test,
       "method":"interval",
       "time": {
         "hours": app.config["SUMMONER_BATCH_HOUR"]
       }
     },
+    # [SUMMONER_BATCH_HOUR]시간마다 소환사 정보 배치
+    # {
+    #   "job":summoner_rank_batch,
+    #   "method":"interval",
+    #   "time": {
+    #     "hours": app.config["SUMMONER_BATCH_HOUR"]
+    #   }
+    # },
     # 자정에 챔피언 분석 정보 배치
-    {
-      "job":generate_champion_statistics,
-      "method":"cron",
-      "time":{
-        "hour": 0
-      }
-    },
+    # {
+    #   "job":generate_champion_statistics,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour": 0
+    #   }
+    # },
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
-    {
-      "job":summoner_match_batch,
-      "method":"cron",
-      "time":{
-        "hour": app.config["MATCH_BATCH_HOUR"]
-      }
-    },
+    # {
+    #   "job":summoner_match_batch,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour": app.config["MATCH_BATCH_HOUR"]
+    #   }
+    # },
     {
       "job":generate_crawl_data,
       "method":"cron",

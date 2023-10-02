@@ -3,9 +3,10 @@ from error.custom_exception import *
 from config.mongo import Mongo
 
 col = "summoner_matches"
-db = Mongo.get_client("riot")
+target_db = Mongo.get_client("riot")
+db_stats = Mongo.get_client("stat")
 
-def getTotalMatchIds(puuid, limit) -> list:
+def update_total_match_ids(puuid, limit, test = False) -> list:
   """
   소환사의 최근 match Id 리스트를 업데이트
 
@@ -16,9 +17,13 @@ def getTotalMatchIds(puuid, limit) -> list:
   Raises:
       DataNotExists
   """
-  
+  if test:
+    target_db = db_stats
+  else:
+    target_db = target_db
+
   # 가장 최근 match id 가져오기
-  old_matches = db[col].find_one({"puuid": puuid})
+  old_matches = target_db[col].find_one({"puuid": puuid})
   
   # 모든 matchId 담을 변수, 최근 matchId 우선 가져오기 (100개씩))
   all_match_ids = set(match_v4.get_summoner_match_ids(puuid, limit=limit, count = 100))
@@ -52,17 +57,10 @@ def getTotalMatchIds(puuid, limit) -> list:
   
   total_list = sorted(list(all_match_ids), reverse=True)
   
-  db[col].update_one(
+  target_db[col].update_one(
       {'puuid': puuid},
       {"$set": {"summoner_match_ids": sorted(
           list(total_list), reverse=True)}},
       True)
 
   return total_list
-  
-def update_by_puuid(puuid:str, match_ids:list):
-  db[col].update_one(
-      {'puuid': puuid},
-      {"$set": {"summoner_match_ids": sorted(
-          list(match_ids), reverse=True)}},
-      True)

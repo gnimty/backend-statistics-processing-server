@@ -66,3 +66,28 @@ def get_summoner_by_id(summoner_id, limit=None):
   result = next((item for item in delayable_request(url, limit=limit) if item["queueType"] == "RANKED_SOLO_5x5"), None)
 
   return result
+
+
+def get_summoners_under_master(tier, division):
+  results = []
+  
+  page = 1
+  
+  while True:  
+    url = f"https://kr.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/{tier}/{division}?page={page}"
+    result = delayable_request(url)
+    if not result or not isinstance(result, list) or len(result)==0:
+      break
+    
+    results.extend(result)
+    page+=1
+  
+  for result in results:
+    result["queue"] = str(result["tier"]).lower()
+    result["tier"] = result["rank"]
+    result["metadata"] = {
+        "id": result["summonerId"],
+    }
+  
+  return results
+  

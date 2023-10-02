@@ -217,7 +217,7 @@ def updateMatch(match_id, limit):
 
 
 def update_matches_by_puuid(puuid, limit=None):
-  match_ids = summoner_matches.getTotalMatchIds(puuid, limit)
+  match_ids = summoner_matches.update_total_match_ids(puuid, limit)
   
   for match_id in match_ids:
     try:
@@ -226,7 +226,6 @@ def update_matches_by_puuid(puuid, limit=None):
       logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
   
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
-  summoner_matches.update_by_puuid(puuid, match_ids)  
   summoner_plays.update_by_puuid(puuid)
   summoner.update_summary(puuid)
   
