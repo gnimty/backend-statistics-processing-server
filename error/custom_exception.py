@@ -1,5 +1,5 @@
 from flask_request_validator import AbstractRule
-from flask_request_validator.exceptions import RuleError, RequiredJsonKeyError, RequestError
+from flask_request_validator.exceptions import RuleError
 from flask_api import status
 from utils.summoner_name import isValidInternalName, makeInternalName
 import logging
