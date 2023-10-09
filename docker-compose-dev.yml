@@ -43,6 +43,8 @@ services:
   # standalone selenium
   selenium:
     image: seleniarm/standalone-chromium
+    environment:
+      NODE_MAX_SESSION: 5
     container_name: selenium
     ports:
       - 4445:4444

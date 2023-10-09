@@ -42,7 +42,7 @@ def get_top_league(league, queue="RANKED_SOLO_5x5"):
   if not entries or not isinstance(entries, list):
     raise custom_exception.CustomUserError(
         "리그 엔트리 정보를 가져오는 데 실패했습니다.",
-        "Result of request to Riot not exists", status.HTTP_404_NOT_FOUND)
+        "Result of request to Riot not exists", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
   # TODO - 요구사항 확장 시 이부분은 고쳐야함
   entries.sort(key=lambda x: x["leaguePoints"], reverse=True)

@@ -1,10 +1,13 @@
 import requests, log
 from config.mongo import Mongo
 from config.redis import Redis
+from riot_requests.champion_v3 import get_rotation_champions
+from modules.crawl import update_patch_note_image
 
 logger = log.get_logger()
 db = Mongo.get_client("riot")
 rd = Redis.get_client()
+col = "version"
 
 def update_latest_version():
 
@@ -13,15 +16,19 @@ def update_latest_version():
 
   versions = list(response.json())
 
-  rd.set("version", versions[0])
-
+  latest_version = versions[0]
+  
+  rd.set("version", latest_version)
+  
   db["version"].delete_many({})
   db["version"].insert_many(
     [{"version": version, "order": i} for version, i in zip(versions, range(len(versions)))])
 
-  return versions[0]
+  update_patch_note_image(latest_version)
 
-def update_champion_info(latest_version):
+  return latest_version
+
+def update_champion_info(latest_version, limit):
 
   url = f"https://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
   response = requests.get(url)
@@ -30,21 +37,44 @@ def update_champion_info(latest_version):
 
   champions_data = dict(data['data'])
 
-  for champion in champions_data.values():
-    champion_id = champion["key"]
-    en = champion["id"]
-    kr = champion["name"]
+  champions = [{
+    "championId": champion["key"],
+    "en": champion["id"],
+    "kr": champion["name"]} for champion in champions_data.values()]
+
+  champion_map = {
+    champion["championId"]: {
+      "en":champion["en"],
+      "kr":champion["kr"]
+    } for champion in champions
+  }
+  
+  for champion in champions:
+    champion_id = champion["championId"]
+    en = champion["en"]
+    kr = champion["kr"]
 
     rd.hset("en", champion_id, en)
     rd.hset("kr", champion_id, kr)
 
   db["champion_info"].delete_many({})
-  db["champion_info"].insert_many([
-      {
-          "championId": champion["key"],
-          "en": champion["id"],
-          "kr": champion["name"]
-      } for champion in champions_data.values()
-  ])
+  db["champion_info"].insert_many(champions)
 
+  url = f"https://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
+  rotations = get_rotation_champions(limit = limit)
+  
+  db["rotations"].insert_many([
+    {
+      "championId":champion_id, 
+      "en":champion_map.get(str(champion_id))["en"], 
+      "kr":champion_map.get(str(champion_id))["kr"]
+    }  for champion_id in rotations
+    ])
+
+  latest_version = get_latest_version()
+  
+  
+  
+def get_latest_version() -> str:
+  return db[col].find_one({"order":0}, {"version":1, "_id":0})["version"]
 

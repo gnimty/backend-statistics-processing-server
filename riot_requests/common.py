@@ -11,7 +11,6 @@ logger = log.get_logger()
 
 headers = {"X-Riot-Token": config.API_KEY}
 
-
 def delayable_request(url, timeout=10, limit = None) -> any:
   """Riot API Rate Limit에 의해 지연될 수 있는 요청 Handle
 
