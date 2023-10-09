@@ -110,6 +110,7 @@ def refresh_summoner(puuid):
   
   return {"message":"업데이트 완료"}
     
+    
 @app.route("/batch/champion/statistics", methods=["POST"] )
 def generate_champion_statistics():
   champion_analysis.championAnalysis()
@@ -122,8 +123,8 @@ def generate_crawl_data():
   
   latest_version = version.update_latest_version()
   
-  version.update_champion_info(latest_version)
-
+  version.update_champion_info(latest_version, app.config["BATCH_LIMIT"])
+  
   crawl.update_sale_info()
   
   return {
@@ -134,38 +135,38 @@ if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
   start_schedule([
-    {
-      "job":summoner_rank_batch_test,
-      "method":"interval",
-      "time": {
-        "hours": app.config["SUMMONER_BATCH_HOUR"]
-      }
-    },
-    # [SUMMONER_BATCH_HOUR]시간마다 소환사 정보 배치
     # {
-    #   "job":summoner_rank_batch,
+    #   "job":summoner_rank_batch_test,
     #   "method":"interval",
     #   "time": {
     #     "hours": app.config["SUMMONER_BATCH_HOUR"]
     #   }
     # },
+    # [SUMMONER_BATCH_HOUR]시간마다 소환사 정보 배치
+    {
+      "job":summoner_rank_batch,
+      "method":"interval",
+      "time": {
+        "hours": app.config["SUMMONER_BATCH_HOUR"]
+      }
+    },
     # 자정에 챔피언 분석 정보 배치
-    # {
-    #   "job":generate_champion_statistics,
-    #   "method":"cron",
-    #   "time":{
-    #     "hour": 0
-    #   }
-    # },
+    {
+      "job":generate_champion_statistics,
+      "method":"cron",
+      "time":{
+        "hour": 0
+      }
+    },
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
-    # {
-    #   "job":summoner_match_batch,
-    #   "method":"cron",
-    #   "time":{
-    #     "hour": app.config["MATCH_BATCH_HOUR"]
-    #   }
-    # },
+    {
+      "job":summoner_match_batch,
+      "method":"cron",
+      "time":{
+        "hour": app.config["MATCH_BATCH_HOUR"]
+      }
+    },
     {
       "job":generate_crawl_data,
       "method":"cron",
@@ -179,4 +180,5 @@ if __name__ == "__main__":
   app.run(
     host = app.config["FLASK_HOST"], 
     port=app.config["FLASK_PORT"],
-    debug=bool(int(app.config["FLASK_DEBUG"])))
+    debug=bool(int(app.config["FLASK_DEBUG"]))
+  )
