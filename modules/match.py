@@ -4,6 +4,9 @@ from utils import date_calc
 from modules.summoner import find_history_by_std_date
 from modules import summoner_matches, summoner_plays, summoner
 from config.mongo import Mongo
+import asyncio
+from community import csmq
+
 
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
@@ -228,6 +231,9 @@ def update_matches_by_puuid(puuid, limit=None):
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
   summoner_plays.update_by_puuid(puuid)
   summoner.update_summary(puuid)
+  
+  target_summoner = summoner.find_by_puuid(puuid)
+  asyncio.run(csmq.add_summoner(target_summoner))
   
 def short_game_version(version):
   split = version.split(".")[:3]

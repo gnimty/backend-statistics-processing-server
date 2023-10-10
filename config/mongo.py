@@ -1,5 +1,5 @@
 from pymongo import *
-from config.config import current_config as config
+from config.appconfig import current_config as config
 import logging
 
 logger = logging.getLogger("app")  # 로거

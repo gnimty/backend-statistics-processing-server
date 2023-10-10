@@ -4,6 +4,8 @@ from utils.summoner_name import makeInternalName
 from modules.TierDivisionMMR import MMR
 from modules.summoner_plays import find_recent_champions
 from config.mongo import Mongo
+import asyncio
+from community import csmq
 
 import log
 logger = log.get_logger()
@@ -136,6 +138,9 @@ def update(summoner, summoner_brief, test=False):
       {"puuid": summoner["puuid"]},
       {"$set": summoner_history},
       True)
+  
+  
+  asyncio.run(csmq.add_summoner(summoner))
   
   return summoner
 

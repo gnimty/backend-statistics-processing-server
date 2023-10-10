@@ -1,13 +1,16 @@
 import os
+import asyncio
 from scheduler import start_schedule  # 스케줄러 로드
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
 from flask_request_validator import *  # parameter validate
 from flask import Flask
 
-from config.config import current_config  # 최초 환경변수 파일 로드
+from config.appconfig import current_config  # 최초 환경변수 파일 로드
 from config.mongo import Mongo
 from config.redis import Redis
+
+from community import csmq
 
 app = Flask(__name__)
 env = os.getenv("APP_ENV") or "local"
@@ -39,12 +42,12 @@ def summoner_rank_batch():
   
   return {"status": "ok", "updatedCnt": updated_cnt}
 
-@app.route('/batch/test', methods=["POST"])
-def summoner_rank_batch_test():
-  # updated_cnt = league_entries.update_all()
-  updated_cnt = league_entries.update_total_summoner()
+# @app.route('/batch/test', methods=["POST"])
+# def summoner_rank_batch_test():
+#   # updated_cnt = league_entries.update_all()
+#   updated_cnt = league_entries.update_total_summoner()
   
-  return {"status": "ok", "updatedCnt": updated_cnt}
+#   return {"status": "ok", "updatedCnt": updated_cnt}
 
 
 @app.route('/batch/match', methods=["POST"])
@@ -108,6 +111,14 @@ def refresh_summoner(puuid):
   
   summoner.update_renewable_time(puuid)
   
+  ##### 소환사 정보 업데이트 치기 #####
+  
+  new_summoner_info = summoner.find_by_puuid(puuid)
+  asyncio.run(csmq.renew_one(new_summoner_info))
+  
+  logger.info("app에서 업데이트 완료")
+  ##### 소환사 정보 업데이트 치기 #####
+  
   return {"message":"업데이트 완료"}
     
     
@@ -130,6 +141,9 @@ def generate_crawl_data():
   return {
     "message":"챔피언 맵 정보 생성 완료"
   }
+@app.route("/test")
+def test():
+  return {"cnt":csmq.get_saved_summoner_cnt()}
 
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
