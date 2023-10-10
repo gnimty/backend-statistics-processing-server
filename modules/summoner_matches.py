@@ -3,7 +3,7 @@ from error.custom_exception import *
 from config.mongo import Mongo
 
 col = "summoner_matches"
-target_db = Mongo.get_client("riot")
+db_riot = Mongo.get_client("riot")
 db_stats = Mongo.get_client("stat")
 
 def update_total_match_ids(puuid, limit, test = False) -> list:
@@ -20,7 +20,7 @@ def update_total_match_ids(puuid, limit, test = False) -> list:
   if test:
     target_db = db_stats
   else:
-    target_db = target_db
+    target_db = db_riot
 
   # 가장 최근 match id 가져오기
   old_matches = target_db[col].find_one({"puuid": puuid})
