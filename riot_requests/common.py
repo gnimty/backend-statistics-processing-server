@@ -3,7 +3,7 @@ import time
 from flask_api import status
 import log
 from error.custom_exception import ForbiddenError
-from config.config import current_config as config
+from config.appconfig import current_config as config
 
 DEFAULT_LIMIT = config.BATCH_LIMIT
 
@@ -57,3 +57,5 @@ def delayable_request(url, timeout=10, limit = None) -> any:
 def get_rate_limit_cnt(header):
   # 20:1,100:120
   return int(header.split(",")[1].split(":")[0])
+
+

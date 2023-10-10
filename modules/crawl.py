@@ -1,6 +1,6 @@
 import log
 from config.mongo import Mongo
-from config.config import current_config as config
+from config.appconfig import current_config as config
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities

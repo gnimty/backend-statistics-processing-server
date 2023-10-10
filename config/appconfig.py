@@ -25,6 +25,9 @@ class Config:
   
   SELENIUM_EXECUTER = os.environ.get("SELENIUM_EXECUTER")
   
+  COMMUNITY_HOST = os.environ.get("COMMUNITY_HOST")
+  COMMUNITY_PORT = int(os.environ.get("COMMUNITY_PORT"))
+  
 class DevelopmentConfig(Config):
   MONGO_URI=f"mongodb://{Config.MONGO_USERNAME}:{Config.MONGO_PASSWORD}@{Config.MONGO_HOST}:{Config.MONGO_PORT}"
 

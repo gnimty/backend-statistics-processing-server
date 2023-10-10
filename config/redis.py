@@ -1,5 +1,5 @@
 from redis import Redis as RedisClient
-from config.config import current_config as config
+from config.appconfig import current_config as config
 
 
 class Redis:
