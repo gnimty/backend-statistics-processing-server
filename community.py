@@ -13,10 +13,12 @@ class SummonerUpdateEntry:
     self.division:int = summoner.get("tier")
     self.lp:int = summoner.get("leaguePoints")
     self.mmr:int = summoner.get("mmr")
-    self.mostLanes:list(str) = summoner.get("mostLanes")
-    self.mostChampionIds:list(str) = summoner.get("mostChampionIds")
+    self.mostLanes:list(str) = summoner.get("mostLanes") or []
+    self.mostChampionIds:list(int) = summoner.get("mostChampionIds") or []
     self.summonerName:str = summoner.get("name")
-    self.profileIconId:int = summoner.get("profileIconId")
+    self.iconId:int = summoner.get("profileIconId") or 100
+    
+    
 
   def toJSON(self):
 	  return json.dumps(self,default=lambda o:o.__dict__,sort_keys=True,indent=4)
@@ -29,7 +31,7 @@ class CustomSummonerMQ:
   
   def __init__(self):
     self.saved = dict()
-    self.thresh_hold = 1000
+    self.threshold = 1000
     self.host = current_config.COMMUNITY_HOST
     self.port = current_config.COMMUNITY_PORT
   # def except_wrapper(func):
@@ -64,7 +66,7 @@ class CustomSummonerMQ:
   def patch_summoners(self, summoners:list):
     url = f"https://{self.host}/community/summoners"
     data = {
-      "summonerUpdates": [summoner.toJSON() for summoner in summoners]
+      "summonerUpdates": [summoner.__dict__ for summoner in summoners]
     }
     
     response = requests.patch(url, json=data)
