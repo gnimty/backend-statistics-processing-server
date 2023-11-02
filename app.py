@@ -1,5 +1,6 @@
 import os
 import asyncio
+import requests
 from scheduler import start_schedule  # 스케줄러 로드
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
@@ -131,6 +132,9 @@ def generate_champion_statistics():
 
 @app.route("/crawl/update", methods = ["POST"])
 def generate_crawl_data():
+  requests.patch(
+    url=f"{app.config['COMMUNITY_HOST']}/asset/champion")
+  
   
   latest_version = version.update_latest_version()
   
@@ -138,13 +142,13 @@ def generate_crawl_data():
   
   crawl.update_sale_info()
   
+  # API 서버에 알리기
+  
+  
   return {
     "message":"챔피언 맵 정보 생성 완료"
   }
-@app.route("/test")
-def test():
-  return {"cnt":csmq.get_saved_summoner_cnt()}
-
+  
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
