@@ -63,6 +63,7 @@ def update_champion_info(latest_version, limit):
   url = f"https://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
   rotations = get_rotation_champions(limit = limit)
   
+  db["rotations"].delete_many({})
   db["rotations"].insert_many([
     {
       "championId":champion_id, 
