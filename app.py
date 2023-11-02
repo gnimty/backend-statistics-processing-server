@@ -142,7 +142,6 @@ def generate_crawl_data():
   requests.patch(
     url=f"{app.config['COMMUNITY_HOST']}/asset/champion")
   
-  
   return {
     "message":"챔피언 맵 정보 생성 완료"
   }

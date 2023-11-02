@@ -20,6 +20,10 @@ def update_by_puuid(puuid):
         "totalWin": { '$sum': { '$cond': [{ '$eq': ['$win', 'true'] }, 1, 0] } },
         "totalGameDuration": {'$sum': '$gameDuration'},
         "totalCs": {'$sum': '$cs'},
+        "totalGold": {'$sum': '$goldEarned'},
+        "totalDamage": {'$sum': '$totalDamageDealtToChampions'},
+        "maxKill": {'$max': '$kills'},
+        "maxDeath": {'$max': '$deaths'},
         "totalKill": { '$sum': '$kills' },
         "totalDeath": { '$sum': '$deaths' },
         "totalAssist": { '$sum': '$assists' },
@@ -41,6 +45,9 @@ def update_by_puuid(puuid):
         "avgKill": {'$round': [ {'$divide':['$totalKill', '$totalPlays']}, 2]},
         "avgDeath": {'$round': [ {'$divide':['$totalDeath', '$totalPlays']}, 2]},
         "avgAssist": {'$round': [ {'$divide':['$totalAssist', '$totalPlays']}, 2]},
+        "avgGold": {'$round': [ {'$divide':['$totalGold', '$totalPlays']}, 2]},
+        "avgDamage": {'$round': [ {'$divide':['$totalDamage', '$totalPlays']}, 2]},
+        
         "avgKda": {
           '$cond': [
             { '$eq': ['$totalDeath', 0] }, 
@@ -69,7 +76,11 @@ def update_by_puuid(puuid):
             "totalDefeat": 1,
             "totalKill": 1,
             "totalDeath": 1,
-            "totalAssist": 1
+            "totalAssist": 1,
+            "avgGold": 1,
+            "avgDamage": 1,
+            "maxKill": 1,
+            "maxDeath": 1,
       }
     }
   ]
@@ -90,7 +101,7 @@ def update_by_puuid(puuid):
       True
     )
   
-def find_recent_champions(puuid):
+def find_most_champions(puuid):
   pipeline_champion =  [
     {
       "$match":{
