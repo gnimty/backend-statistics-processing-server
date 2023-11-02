@@ -2,7 +2,7 @@ from riot_requests import summoner_v4
 from datetime import datetime
 from utils.summoner_name import makeInternalName
 from modules.TierDivisionMMR import MMR
-from modules.summoner_plays import find_recent_champions
+from modules.summoner_plays import find_most_champions
 from config.mongo import Mongo
 import asyncio
 from community import csmq
@@ -228,15 +228,15 @@ def update_summary(puuid):
   if not summoner:
     return
   
-  summoner["mostLanes"] = find_recent_lane(puuid)
-  summoner["mostChampionIds"] = find_recent_champions(puuid)
+  summoner["mostLanes"] = find_most_lane(puuid)
+  summoner["mostChampionIds"] = find_most_champions(puuid)
   
   db_riot[col].update_one(
     {"puuid": summoner["puuid"]},
     {"$set":summoner},
     True)
   
-def find_recent_lane(puuid):
+def find_most_lane(puuid):
   
   # 1. summonerMatches에서 최근 20개의 gameId를 가져오기
   pipeline_lane = [
