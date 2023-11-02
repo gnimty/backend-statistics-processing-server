@@ -33,15 +33,6 @@ class CustomSummonerMQ:
     self.saved = dict()
     self.threshold = 1000
     self.host = current_config.COMMUNITY_HOST
-    self.port = current_config.COMMUNITY_PORT
-  # def except_wrapper(func):
-  #   def wrapper(*args, **kwargs) -> bool:
-  #       try:
-  #         func(*args, **kwargs)
-  #         return True
-  #       except Exception:
-  #         return False        
-  #   return wrapper
   
   def get_saved_summoner_cnt(self):
     return len(self.saved)
@@ -64,7 +55,7 @@ class CustomSummonerMQ:
   
   #3. 공통 api 호출 메소드
   def patch_summoners(self, summoners:list):
-    url = f"https://{self.host}/community/summoners"
+    url = f"{self.host}/community/summoners"
     data = {
       "summonerUpdates": [summoner.__dict__ for summoner in summoners]
     }
