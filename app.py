@@ -132,10 +132,6 @@ def generate_champion_statistics():
 
 @app.route("/crawl/update", methods = ["POST"])
 def generate_crawl_data():
-  requests.patch(
-    url=f"{app.config['COMMUNITY_HOST']}/asset/champion")
-  
-  
   latest_version = version.update_latest_version()
   
   version.update_champion_info(latest_version, app.config["BATCH_LIMIT"])
@@ -143,6 +139,8 @@ def generate_crawl_data():
   crawl.update_sale_info()
   
   # API 서버에 알리기
+  requests.patch(
+    url=f"{app.config['COMMUNITY_HOST']}/asset/champion")
   
   
   return {
