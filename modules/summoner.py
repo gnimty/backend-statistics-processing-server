@@ -139,7 +139,8 @@ def update(summoner, summoner_brief, test=False):
       {"$set": summoner_history},
       True)
   
-  
+  update_summary(summoner["puuid"])
+
   asyncio.run(csmq.add_summoner(summoner))
   
   return summoner
