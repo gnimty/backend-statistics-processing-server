@@ -9,7 +9,7 @@ logger = log.get_logger()
 class SummonerUpdateEntry:
   def __init__(self, summoner):
     self.puuid:str = summoner.get("puuid")
-    self.tier:str = summoner.get("queue").upper()
+    self.tier:str = summoner.get("queue").lower()
     self.division:int = summoner.get("tier")
     self.lp:int = summoner.get("leaguePoints")
     self.mmr:int = summoner.get("mmr")
@@ -48,7 +48,7 @@ class CustomSummonerMQ:
   async def add_summoner(self, summoner):
     self.saved[summoner.get("puuid")] = SummonerUpdateEntry(summoner)
 
-    if len(self.saved)>=1000:
+    if len(self.saved)>=100:
       self.patch_summoners(list(self.saved.values()))
       self.saved.clear()
       
@@ -62,7 +62,6 @@ class CustomSummonerMQ:
     
     response = requests.patch(url, json=data)
 
-    
     if response.status_code != 200:  #실패 시 
       logger.error("Community API 호출에 실패했습니다. status code = %s", response.status_code)
     else:
