@@ -158,13 +158,13 @@ if env!="local":
     #   }
     # },
     # [SUMMONER_BATCH_HOUR]시간마다 소환사 정보 배치
-    {
-      "job":summoner_rank_batch,
-      "method":"interval",
-      "time": {
-        "hours": app.config["SUMMONER_BATCH_HOUR"]
-      }
-    },
+    # {
+    #   "job":summoner_rank_batch,
+    #   "method":"interval",
+    #   "time": {
+    #     "hours": app.config["SUMMONER_BATCH_HOUR"]
+    #   }
+    # },
     # 자정에 챔피언 분석 정보 배치
     {
       "job":generate_champion_statistics,
