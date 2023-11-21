@@ -62,8 +62,10 @@ class CustomSummonerMQ:
     
     response = requests.patch(url, json=data)
 
+    
     if response.status_code != 200:  #실패 시 
       logger.error("Community API 호출에 실패했습니다. status code = %s", response.status_code)
-    
+    else:
+      logger.info(response.json())
 
 csmq = CustomSummonerMQ()
