@@ -30,6 +30,7 @@ Redis.set_client()
 
 from modules import summoner, league_entries, match, version, crawl 
 from modules.analysis import champion as champion_analysis
+from riot_requests import summoner_v4
 
 @app.route('/batch/summoner', methods=["POST"])
 def summoner_rank_batch():
@@ -39,7 +40,7 @@ def summoner_rank_batch():
       updatedCnt(int) : 랭크 업데이트한 유저 수 
   """
   updated_cnt = league_entries.update_all()
-  # updated_cnt = league_entries.update_total_summoner()
+  # updated_cnt = league_entri`es.update_total_summoner()
   
   return {"status": "ok", "updatedCnt": updated_cnt}
 
@@ -104,9 +105,9 @@ def refresh_summoner(puuid):
   entry["tier"] = entry["rank"]
   del entry["rank"]
   if entry["queue"] not in ["master", "challenger", "grandmaster"]:
-    raise UserUpdateFailed("유저 전적 업데이트 실패")    
+    raise UserUpdateFailed("유저 전적 업데이트 실패")
   
-  summoner.update(summoner_info, entry)
+  summoner.update(summoner_v4.get_by_puuid(puuid), entry, check_name=True)
   
   match.update_matches_by_puuid(summoner_info["puuid"], app.config["API_REQUEST_LIMIT"])
   

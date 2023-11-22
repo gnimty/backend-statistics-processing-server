@@ -53,8 +53,8 @@ def update_total_summoner():
         entries.extend(league_exp_v4.get_summoners_under_master(tier, division))
   
   for entry in entries:
-    puuid = summoner.update_by_summoner_brief(entry, test=True)
-    summoner_matches.update_total_match_ids(puuid, 100, test=True)
+    puuid = summoner.update_by_summoner_brief(entry)
+    summoner_matches.update_total_match_ids(puuid, 100)
 
   updated_cnt = len(entries)
 

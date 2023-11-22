@@ -26,7 +26,8 @@ class Mongo:
     summoners_index = IndexModel([
         ("mmr", ASCENDING),
         ("puuid", ASCENDING),
-        ("internal_name", ASCENDING)
+        ("internal_name", ASCENDING),
+        ("internal_tagname", ASCENDING)
     ], name="summoners_index")
 
     summoner_history_index = IndexModel([

@@ -14,7 +14,6 @@ col = "summoners"
 col_history = "summoner_history"
 
 db_riot = Mongo.get_client("riot")
-db_stats = Mongo.get_client("stat")
 
 division = {
   "I":1,
@@ -29,7 +28,7 @@ def find_all_puuids() -> list:
   return [s['puuid'] for s in puuids if 'puuid' in s]
 
 
-def find_one_by_summoner_id(summoner_id, test = False):
+def find_one_by_summoner_id(summoner_id):
   """소환사 ID로 소환사 정보 조회
 
   Args:
@@ -39,10 +38,7 @@ def find_one_by_summoner_id(summoner_id, test = False):
   Returns:
       summoner
   """
-  if test:
-    target_db = db_stats
-  else:
-    target_db = db_riot
+  target_db = db_riot
   
   summoner = target_db[col].find_one(
     {'id': summoner_id},
@@ -61,12 +57,33 @@ def update_by_puuid(puuid):
   
   update(db_riot, summoner or new_summoner, new_summoner)
 
+def recursive_tagline_update(summoner):
+  matched = db_riot[col].find_one({"internal_tagname":summoner["internal_tagname"],
+                                   "puuid":{"$ne":summoner["puuid"]}})
+  if matched:
+    logger.info("%s와 동일한 internal tagname 소환사 확인, 업데이트", summoner["internal_tagname"])
+    tagName = summoner_v4.get_tagline(matched["puuid"])
+    matched["name"] = tagName["gameName"]
+    matched["internal_name"] = makeInternalName(matched["name"])
+    matched["tagLine"] = tagName["tagLine"]
+    matched["internal_tagname"] = matched["internal_name"] + matched["tagLine"]
+    
+    db_riot[col].update_one({"puuid":matched["puuid"]}, {"$set":matched})
+    logger.info("업데이트 후 internal tagname : %s", matched["internal_tagname"])
+    recursive_tagline_update(matched)
+    
+    
 
 # 이부분 코드 완전히 개선해야 함
-def update_by_summoner_brief(summoner_brief, test = False)->str:
-  summoner = find_one_by_summoner_id(summoner_brief["summonerId"], test) or summoner_v4.get_by_summoner_id(summoner_brief["summonerId"])
+def update_by_summoner_brief(summoner_brief)->str:
+  summoner = find_one_by_summoner_id(summoner_brief["summonerId"]) 
   
-  update(summoner, summoner_brief, test)
+  if not summoner: # 기존에 존재하지 않는 데이터 -> request를 통해 붙어서 옴
+    summoner = summoner_v4.get_by_summoner_id(summoner_brief["summonerId"])
+    update(summoner, summoner_brief, check_name = True)
+  else: # 기존에 존재하는 데이터 -> 랭킹 갱신 시 체크하지 않음
+    update(summoner, summoner_brief)  
+    
   return summoner["puuid"]
   
 
@@ -78,17 +95,15 @@ def find_by_puuid(puuid):
   return summoner
 
 
-def update(summoner, summoner_brief, test=False):
+def update(summoner, summoner_brief, check_name = False):
   """summoner 정보 업데이트 및 history collection 업데이트
 
   Args:
       summoner: 현재 정보
       summoner_brief: 조회한 최신 entry 정보
   """
-  if test:
-    target_db = db_stats
-  else:
-    target_db = db_riot
+  
+  target_db = db_riot
   
   if not summoner:
     return None
@@ -100,15 +115,21 @@ def update(summoner, summoner_brief, test=False):
   summoner["leaguePoints"] = summoner_brief["leaguePoints"]
   summoner["wins"] = summoner_brief["wins"] 
   summoner["losses"] = summoner_brief["losses"] 
+  summoner["mmr"] = MMR[summoner["queue"]].value + int(summoner["leaguePoints"])
+  
   if "rank" in summoner:
     del summoner["rank"] # 랭크 정보 삭제
   
-  summoner["name"] = summoner_brief["summonerName"]
-  summoner["internal_name"] = makeInternalName(summoner["name"])
-  summoner["mmr"] = MMR[summoner["queue"]].value + int(summoner["leaguePoints"])\
+  if not check_name: # tagLine 갱신을 거치지 않은 데이터일 경우 DB 업데이트에 반영하지 않음
+    del summoner["name"]
+    del summoner["internal_name"]
+    del summoner["internal_tagname"]
+  else:
+    # DB에 동일한 internal tagname이 존재한다면 해당 소환사 업데이트
+    recursive_tagline_update(summoner)
   
   # history list 존재하면 갖다 붙이고 없으면 새로 생성
-  summoner_history = find_history(summoner["puuid"], test)
+  summoner_history = find_history(summoner["puuid"])
   
   if not summoner_history or not summoner_history.get("history"):
     summoner_history = {
@@ -146,12 +167,9 @@ def update(summoner, summoner_brief, test=False):
   return summoner
 
 
-def find_history(puuid, test = False):
+def find_history(puuid):
   
-  if test:
-    target_db = db_stats
-  else:
-    target_db = db_riot
+  target_db = db_riot
     
   return target_db[col_history].find_one({"puuid":puuid})
   
