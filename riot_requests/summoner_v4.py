@@ -38,7 +38,7 @@ def get_by_summoner_id(summoner_id):
 
   return post_process(result)
 
-def get_by_puuid(puuid):
+def get_by_puuid(puuid, tagName = None):
   if not puuid:
     raise AttributeError(f"{__name__}의 인자를 잘못 넘겼습니다.")
 
@@ -48,14 +48,15 @@ def get_by_puuid(puuid):
   if "id" not in result:
     return None
 
-  return post_process(result)
+  return post_process(result, tagName=tagName)
   
   
 
-def post_process(summoner):
+def post_process(summoner, tagName = None):
   del (summoner["accountId"])  # 필요 없는 properties 제거
   
-  tagName = get_tagline(summoner["puuid"])
+  if tagName == None:
+    tagName = get_tagline(summoner["puuid"])
   
   summoner["tagLine"] = tagName.get("tagLine")
   summoner["name"] = tagName.get("gameName")
@@ -75,4 +76,13 @@ def get_tagline(puuid):
   
   return result
   
+def get_tagline_by_name_and_tag(gameName, tagLine):
+  url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}"
+  
+  result = delayable_request(url)
+  
+  if "tagLine" not in result:
+    return None
+  
+  return result
   

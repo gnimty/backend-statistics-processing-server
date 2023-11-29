@@ -49,12 +49,25 @@ def get_top_league(league, queue="RANKED_SOLO_5x5"):
 
   # 티어, 큐 업데이트
   for entry in entries:
-    entry["queue"] = league[:-7]
-    entry["tier"] = entry["rank"]
+    if queue == "RANKED_SOLO_5x5":
+      entry["queue"] = league[:-7]
+      entry["tier"] = entry["rank"]
+      
+    else:
+      entry["queue_flex"] = league[:-7]
+      entry["tier_flex"] = entry["rank"]
+      entry["leaguePoints_flex"] = entry["leaguePoints"]
+      entry["wins_flex"] = entry["wins"]
+      entry["losses_flex"] = entry["losses"]
+      
+      del entry["leaguePoints"]
+      del entry["wins"]
+      del entry["losses"]
+      
     entry["metadata"] = {
-        "id": entry["summonerId"],
+      "id": entry["summonerId"],
     }
-
+    
   return entries
 
 
@@ -62,19 +75,40 @@ def get_summoner_by_id(summoner_id, limit=None):
 
   url = f"https://kr.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}"
   
-  # 가져온 소환사 정보 중 솔로 랭크에 해당하는 정보만 가져오기, 없으면 None
-  result = next((item for item in delayable_request(url, limit=limit) if item["queueType"] == "RANKED_SOLO_5x5"), None)
+  result = delayable_request(url, limit=limit)
+  first = next((item for item in result))
+  total = {
+    "summonerName":first["summonerName"],
+    "summonerId":first["summonerId"],
+    "metadata":{
+      "id": first["summonerId"],
+    },
+  }
+  
+  for item in result:
+    if item["queueType"]=="RANKED_SOLO_5x5":
+      total["queue"] = item["tier"].lower()
+      total["tier"] = item["rank"]
+      total["leaguePoints"] = item["leaguePoints"]
+      total["wins"] = item["wins"]
+      total["losses"] = item["losses"]
+      
+    elif item["queueType"]=="RANKED_FLEX_SR":
+      total["queue_flex"] = item["tier"].lower()
+      total["tier_flex"] = item["rank"]
+      total["leaguePoints_flex"] = item["leaguePoints"]
+      total["wins_flex"] = item["wins"]
+      total["losses_flex"] = item["losses"]
+  return total
 
-  return result
 
-
-def get_summoners_under_master(tier, division):
+def get_summoners_under_master(tier, division, queue = "RANKED_SOLO_5x5"):
   results = []
   
   page = 1
   
   while True:  
-    url = f"https://kr.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/{tier}/{division}?page={page}"
+    url = f"https://kr.api.riotgames.com/lol/league-exp/v4/entries/{queue}/{tier}/{division}?page={page}"
     result = delayable_request(url)
     if not result or not isinstance(result, list) or len(result)==0:
       break

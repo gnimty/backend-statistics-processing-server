@@ -1,6 +1,7 @@
 import os
 import asyncio
 import requests
+import datetime
 from scheduler import start_schedule  # 스케줄러 로드
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
@@ -40,7 +41,7 @@ def summoner_rank_batch():
       updatedCnt(int) : 랭크 업데이트한 유저 수 
   """
   updated_cnt = league_entries.update_all()
-  # updated_cnt = league_entri`es.update_total_summoner()
+  # updated_cnt = league_entries.update_total_summoner()
   
   return {"status": "ok", "updatedCnt": updated_cnt}
 
@@ -84,6 +85,17 @@ def startSummonerBatchScheduler():
   logger.info("소환사 배치 스케줄 시작")
   return {"message":"scheduler started"}
 
+@app.route("/batch/summoner/lookup/<gameName>/<tagLine>", methods=["POST"])
+def lookup_summoner(gameName, tagLine):
+  # 해당 소환사 이름과 tagLine이 일치하는 소환사 정보 갱신 또는 저장
+  tagName = summoner_v4.get_tagline_by_name_and_tag(gameName, tagLine)
+  if tagName==None:
+    raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
+  
+  summoner.update_by_puuid(tagName.get("puuid"), tagName)
+  
+  return {"message":"해당 소환사 정보가 존재하여 업데이트합니다."}
+  
 
 @app.route("/batch/summoner/refresh/<puuid>", methods=["POST"] )
 def refresh_summoner(puuid):
@@ -92,29 +104,19 @@ def refresh_summoner(puuid):
   summoner_info = summoner.find_by_puuid(puuid)
   
   if not summoner_info:
-    raise UserUpdateFailed("유저 전적 업데이트 실패")    
-    
+    raise UserUpdateFailed("유저 전적 업데이트 실패")
+  
   # 이후 해당 소환사의 summonerId로 소환사 랭크 정보 가져오기 -> diamond 이하라면 버리기
   entry = league_entries.get_summoner_by_id(summoner_info["id"], app.config["API_REQUEST_LIMIT"])
   
-  # TODO 현재는 개인랭크 업데이트만 하고 있기 때문에 추후에 변경해야 함
   if entry == None:
     raise UserUpdateFailed("유저 전적 업데이트 실패")    
   
-  entry["queue"] = entry["tier"].lower()
-  entry["tier"] = entry["rank"]
-  del entry["rank"]
-  if entry["queue"] not in ["master", "challenger", "grandmaster"]:
-    raise UserUpdateFailed("유저 전적 업데이트 실패")
-  
-  summoner.update(summoner_v4.get_by_puuid(puuid), entry, check_name=True)
+  summoner.update(summoner_v4.get_by_puuid(puuid), entry, check_name=True, check_refresh=True)
   
   match.update_matches_by_puuid(summoner_info["puuid"], app.config["API_REQUEST_LIMIT"])
   
-  summoner.update_renewable_time(puuid)
-  
   ##### 소환사 정보 업데이트 치기 #####
-  
   new_summoner_info = summoner.find_by_puuid(puuid)
   asyncio.run(csmq.renew_one(new_summoner_info))
   
@@ -137,6 +139,7 @@ def generate_crawl_data():
   
   version.update_champion_info(latest_version, app.config["BATCH_LIMIT"])
   
+  crawl.update_patch_note_summary(latest_version)
   crawl.update_sale_info()
   
   # API 서버에 알리기
@@ -146,6 +149,14 @@ def generate_crawl_data():
   return {
     "message":"챔피언 맵 정보 생성 완료"
   }
+  
+@app.route("/test")
+def test():
+  league_entries.test()
+  return {
+    "message":"complete"
+  }
+
   
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")

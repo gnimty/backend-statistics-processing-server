@@ -1,11 +1,12 @@
-from riot_requests import summoner_v4
+from riot_requests import summoner_v4, league_exp_v4
 from datetime import datetime
 from utils.summoner_name import makeInternalName
-from modules.TierDivisionMMR import MMR
+from modules.tier_division_mmr import MMR
 from modules.summoner_plays import find_most_champions
 from config.mongo import Mongo
 import asyncio
 from community import csmq
+from error.custom_exception import *
 
 import log
 logger = log.get_logger()
@@ -38,9 +39,8 @@ def find_one_by_summoner_id(summoner_id):
   Returns:
       summoner
   """
-  target_db = db_riot
   
-  summoner = target_db[col].find_one(
+  summoner = db_riot[col].find_one(
     {'id': summoner_id},
     {"_id": 0, "accountId": 0})
 
@@ -50,12 +50,14 @@ def find_one_by_summoner_id(summoner_id):
   return summoner
 
 
-def update_by_puuid(puuid):
-  summoner = find_by_puuid(puuid)
+def update_by_puuid(puuid, tagName=None):
+  # puuid에 해당하는 tagName 및 랭크 정보 업데이트
   
-  new_summoner = summoner_v4.get_by_puuid(puuid)
+  summoner = summoner_v4.get_by_puuid(puuid, tagName=tagName)
   
-  update(db_riot, summoner or new_summoner, new_summoner)
+  entry = league_exp_v4.get_summoner_by_id(summoner.get("id"))
+  
+  update(summoner, entry, check_name=True)
 
 def recursive_tagline_update(summoner):
   matched = db_riot[col].find_one({"internal_tagname":summoner["internal_tagname"],
@@ -90,12 +92,12 @@ def update_by_summoner_brief(summoner_brief)->str:
 def find_by_puuid(puuid):
   summoner = db_riot[col].find_one(
     {"puuid": puuid}, 
-    {"_id": 0, "accountId": 0})
+    {"_id": 0})
 
   return summoner
 
 
-def update(summoner, summoner_brief, check_name = False):
+def update(summoner, summoner_brief, check_name = False, check_refresh = False):
   """summoner 정보 업데이트 및 history collection 업데이트
 
   Args:
@@ -103,19 +105,8 @@ def update(summoner, summoner_brief, check_name = False):
       summoner_brief: 조회한 최신 entry 정보
   """
   
-  target_db = db_riot
-  
   if not summoner:
     return None
-  
-  summoner_brief["tier"] = division[summoner_brief["tier"]]
-  summoner["updatedAt"] = datetime.now()
-  summoner["queue"] = summoner_brief["queue"]
-  summoner["tier"] = summoner_brief["tier"]
-  summoner["leaguePoints"] = summoner_brief["leaguePoints"]
-  summoner["wins"] = summoner_brief["wins"] 
-  summoner["losses"] = summoner_brief["losses"] 
-  summoner["mmr"] = MMR[summoner["queue"]].value + int(summoner["leaguePoints"])
   
   if "rank" in summoner:
     del summoner["rank"] # 랭크 정보 삭제
@@ -127,55 +118,76 @@ def update(summoner, summoner_brief, check_name = False):
   else:
     # DB에 동일한 internal tagname이 존재한다면 해당 소환사 업데이트
     recursive_tagline_update(summoner)
-  
+
+  summoner["updatedAt"] = datetime.now()
   # history list 존재하면 갖다 붙이고 없으면 새로 생성
-  summoner_history = find_history(summoner["puuid"])
-  
-  if not summoner_history or not summoner_history.get("history"):
-    summoner_history = {
-        "puuid": summoner["puuid"],
-        "history": [{
-            "queue": summoner_brief["queue"],
-            "tier":summoner_brief["tier"],
-            "leaguePoints":summoner_brief["leaguePoints"],
-            "updatedAt":summoner["updatedAt"]
-        }]
-    }
-  else:
-    # history 맨 처음에 insert
-    summoner_history["history"].insert(0, {
-      "queue":summoner_brief["queue"],
-      "tier":summoner_brief["tier"],
-      "leaguePoints":summoner_brief["leaguePoints"],
-      "updatedAt":summoner["updatedAt"],
-    })
+  for queue in ["RANK_SOLO_5x5", "RANK_FLEX_SR"]:
+    suffix= "" if queue=="RANK_SOLO_5x5" else "_flex"
     
-  target_db[col].update_one(
-      {"puuid": summoner["puuid"]},
-      {"$set": summoner},
-      True)
-  
-  target_db[col_history].update_one(
+    if summoner_brief.get("tier"+suffix): # 솔로랭크, 자유랭크 정보가 각각 포함되어 있다면
+      summoner_brief["tier"+suffix] = division[summoner_brief.get("tier"+suffix)]
+      summoner["tier"+suffix] = summoner_brief.get("tier"+suffix)
+      summoner["queue"+suffix] = summoner_brief.get("queue"+suffix).lower()
+      summoner["leaguePoints"+suffix] = summoner_brief.get("leaguePoints"+suffix)
+      summoner["wins"+suffix] = summoner_brief.get("wins"+suffix)
+      summoner["losses"+suffix] = summoner_brief.get("losses"+suffix)
+      summoner["mmr"+suffix] = MMR.rank_to_mmr(summoner.get("queue"+suffix), summoner.get("tier"+suffix), int(summoner.get("leaguePoints"+suffix)))  
+    else:
+      continue
+    
+    summoner_history = find_history(summoner["puuid"], queue)
+    
+    if not summoner_history or not summoner_history.get("history"):
+      summoner_history = {
+          "puuid": summoner["puuid"],
+          "history": [{
+              "queue": summoner_brief["queue"+suffix],
+              "tier":summoner_brief["tier"+suffix],
+              "leaguePoints":summoner_brief["leaguePoints"+suffix],
+              "updatedAt":summoner["updatedAt"]
+          }]
+      }
+    else:
+      # history 맨 처음에 insert
+      summoner_history["history"].insert(0, {
+        "queue":summoner_brief["queue"+suffix],
+        "tier":summoner_brief["tier"+suffix],
+        "leaguePoints":summoner_brief["leaguePoints"+suffix],
+        "updatedAt":summoner["updatedAt"],
+      })
+    
+    target_collection = "summoner_history"+suffix
+    
+    db_riot[target_collection].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner_history},
       True)
   
   update_summary(summoner["puuid"])
-
-  asyncio.run(csmq.add_summoner(summoner))
+  
+  if check_refresh:
+    summoner["renewableAt"] = datetime.now()
+  else:
+    asyncio.run(csmq.add_summoner(summoner))
+  
+  db_riot[col].update_one(
+      {"puuid": summoner["puuid"]},
+      {"$set": summoner},
+      True)
+  
   
   return summoner
 
 
-def find_history(puuid):
+def find_history(puuid, queue):
+  if queue=="RANK_SOLO_5x5":
+    return db_riot["summoner_history"].find_one({"puuid":puuid})
+  elif queue=="RANK_FLEX_SR":
+    return db_riot["summoner_history_flex"].find_one({"puuid":puuid})
+  return None
   
-  target_db = db_riot
-    
-  return target_db[col_history].find_one({"puuid":puuid})
-  
-
-def find_history_by_std_date(puuid, stdDate):
-  summoner_history = find_history(puuid)
+def find_history_by_std_date(puuid, stdDate, mode):
+  summoner_history = find_history(puuid, mode)
   
   if not summoner_history or "history" not in summoner_history:
     return {
@@ -210,36 +222,12 @@ def update_renewable_time(puuid):
   if not summoner:
     return 
   
-  summoner["updatedAt"] = datetime.now()
+  summoner["renewableAt"] = datetime.now()
   db_riot[col].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner},
       True)
-  
-  
-def moveHistoryFields(db):
-  summoners = list(db[col].find({}))
-  
-  for i in range(len(summoners)):
-    summoner = summoners[i]
-    
-    # 1. history 필드가 있으면 summoner_history에 이관시키기
-    if "history" in summoner:
-      
-      summoner_history = {
-        "puuid": summoner["puuid"],
-        "history": summoner["history"]
-      }
-      
-      db[col_history].update_one(
-        {"puuid": summoner["puuid"]},
-        {"$set": summoner_history},
-      True)
-      
-      db[col].update_one(
-        {"puuid": summoner["puuid"]},
-        {"$unset": {"history":""}})
-      
+
 
 def update_summary(puuid):
   summoner = find_by_puuid(puuid)
@@ -250,17 +238,21 @@ def update_summary(puuid):
   summoner["mostLanes"] = find_most_lane(puuid)
   summoner["mostChampionIds"] = find_most_champions(puuid)
   
+  summoner["mostLanes_flex"] = find_most_lane(puuid, queueId=440)
+  summoner["mostChampionIds_flex"] = find_most_champions(puuid, queueId=440)
+  
   db_riot[col].update_one(
     {"puuid": summoner["puuid"]},
     {"$set":summoner},
     True)
   
-def find_most_lane(puuid):
+def find_most_lane(puuid, queueId=420):
   
   # 1. summonerMatches에서 최근 20개의 gameId를 가져오기
   pipeline_lane = [
     {"$match":{
       "puuid":puuid,
+      "queueId":queueId,
       "lane":{
         "$in": ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
       }
@@ -282,3 +274,28 @@ def find_most_lane(puuid):
   aggregated = list(db_riot["participants"].aggregate(pipeline_lane))
   
   return [r["lane"] for r in aggregated][:3]
+
+
+
+# def moveHistoryFields(db):
+#   summoners = list(db[col].find({}))
+  
+#   for i in range(len(summoners)):
+#     summoner = summoners[i]
+    
+#     # 1. history 필드가 있으면 summoner_history에 이관시키기
+#     if "history" in summoner:
+      
+#       summoner_history = {
+#         "puuid": summoner["puuid"],
+#         "history": summoner["history"]
+#       }
+      
+#       db[col_history].update_one(
+#         {"puuid": summoner["puuid"]},
+#         {"$set": summoner_history},
+#       True)
+      
+#       db[col].update_one(
+#         {"puuid": summoner["puuid"]},
+#         {"$unset": {"history":""}})

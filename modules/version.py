@@ -20,9 +20,10 @@ def update_latest_version():
   
   rd.set("version", latest_version)
   
-  db["version"].delete_many({})
-  db["version"].insert_many(
-    [{"version": version, "order": i} for version, i in zip(versions, range(len(versions)))])
+  
+  for v in [{"version": version, "order": i} for version, i in zip(versions, range(len(versions)))]:
+    db["version"].update_one({"version":v["version"]},
+                             {"$set":v})
 
   update_patch_note_image(latest_version)
 

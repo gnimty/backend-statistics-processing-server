@@ -33,6 +33,10 @@ class Mongo:
     summoner_history_index = IndexModel([
         ("puuid", ASCENDING)
     ], name="summoner_history_index")
+    
+    summoner_history_flex_index = IndexModel([
+        ("puuid", ASCENDING)
+    ], name="summoner_history_flex_index")
 
     summoner_matches_index = IndexModel([
         ("puuid", ASCENDING)
@@ -74,6 +78,7 @@ class Mongo:
 
     db.summoners.create_indexes([summoners_index])
     db.summoner_history.create_indexes([summoner_history_index])
+    db.summoner_history_flex.create_indexes([summoner_history_flex_index])
     db.summoner_matches.create_indexes([summoner_matches_index])
     db.matches.create_indexes([matches_index])
     db.participants.create_indexes([participants_index])

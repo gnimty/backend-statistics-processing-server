@@ -5,7 +5,7 @@ import log
 
 logger = log.get_logger()
 
-def get_summoner_match_ids(puuid, limit = None, start=0, count = 30):
+def get_summoner_match_ids(puuid, limit = None, start=0, count = 30, queue=420):
   """
   유저의 전적 id 리스트 가져오기
   2000 requests every 10 seconds
@@ -23,7 +23,6 @@ def get_summoner_match_ids(puuid, limit = None, start=0, count = 30):
       [matchIds]: 전적 id 리스트
   """
   
-  queue = 420 # rank solo
   type = "ranked"
   
   url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue={queue}&type={type}&start={start}&count={count}"

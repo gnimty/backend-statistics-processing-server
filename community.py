@@ -9,7 +9,9 @@ logger = log.get_logger()
 class SummonerUpdateEntry:
   def __init__(self, summoner):
     self.puuid:str = summoner.get("puuid")
-    self.tier:str = summoner.get("queue").lower()
+    self.tier:str = summoner.get("queue")
+    if self.tier:
+      self.tier = self.tier.lower()
     self.division:int = summoner.get("tier")
     self.lp:int = summoner.get("leaguePoints")
     self.mmr:int = summoner.get("mmr")
@@ -18,8 +20,6 @@ class SummonerUpdateEntry:
     self.summonerName:str = summoner.get("name")
     self.iconId:int = summoner.get("profileIconId") or 100
     
-    
-
   def toJSON(self):
 	  return json.dumps(self,default=lambda o:o.__dict__,sort_keys=True,indent=4)
  
@@ -48,7 +48,7 @@ class CustomSummonerMQ:
   async def add_summoner(self, summoner):
     self.saved[summoner.get("puuid")] = SummonerUpdateEntry(summoner)
 
-    if len(self.saved)>=100:
+    if len(self.saved)>=1000:
       self.patch_summoners(list(self.saved.values()))
       self.saved.clear()
       

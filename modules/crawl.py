@@ -149,3 +149,72 @@ def update_patch_note_image(latest_version):
         
         db["version"].update_one({"version":latest_version}, 
                                  {"$set":{"releaseNoteUrl":baseUrl, "releaseNoteImgUrl":src}})
+        
+def update_patch_note_summary(latest_version):
+    '''
+    0. 패치 버전 + 패치 날짜
+    1. 대상 챔피언 이름 + id
+    2. 대상 스킬 (또는 기본 능력치) 이미지 + 이름 -> 기본 능력치일 경우 대체 이미지 (챔피언 아이콘이 좋아보임) 또는 emty
+    3. 변경 내용 리스트
+    '''
+    
+    latest = db["version"].find_one({"version":latest_version})
+    
+    if latest and "patchNoteParsed" in latest and latest["patchNoteParsed"]:
+        return 
+    
+    db["patch"].delete_many({"version":latest_version})
+    
+    champion_map = {champion["en"].lower(): champion for champion in list(db["champion_info"].find())}
+    
+    baseUrl = "https://www.leagueoflegends.com/ko-kr/news/game-updates/patch-%s-%s-notes/"
+    
+    split = latest_version.split(".")
+    
+    baseUrl%=(split[0], split[1])
+    
+    with webdriver.Remote(
+        command_executor=config.SELENIUM_EXECUTER,  # Selenium 호스트 및 포트 설정
+        options=chrome_options
+    ) as driver:
+        driver.get(baseUrl)
+        
+        header = driver.find_element(By.XPATH, "//h2[@id='patch-champions']/ancestor::header")
+        elements = header.find_elements(By.XPATH, "following-sibling::div[@class='content-border']")
+
+        patches = []
+        
+        for element in elements:
+            try:
+                champion_name = element.find_element(By.CSS_SELECTOR, 'h3.change-title').get_attribute('id').split('-')[1]
+                
+                targets = element.find_elements(By.CSS_SELECTOR, 'h4.change-detail-title')
+                
+                for target in targets:
+                    class_name = target.get_attribute("class")
+
+                    skill_img = None
+                    if "ability-title" in class_name.split(): # 기본 능력치는 적용 안됨
+                        skill_img = target.find_element(By.CSS_SELECTOR, "img").get_attribute("src")
+                    
+                    changes = target.find_element(By.XPATH,'following-sibling::ul').find_elements(By.TAG_NAME, "li")
+                    
+                    patches.append({
+                        "en":champion_name,
+                        "kr":champion_map.get(champion_name)["kr"],
+                        "championId":champion_map.get(champion_name)["championId"],
+                        "version":latest_version,
+                        "target":target.text,
+                        "targetImgUrl": skill_img,
+                        "changes": [change.text for change in changes]
+                    })
+                        
+            except Exception:
+                break
+        
+        db["patch"].insert_many(patches)
+        db["version"].update_one({"version":latest_version}, 
+                                 {"$set":{"patchNoteParsed":True}})
+        # 2. db["patch"]에 모두 삽입
+            
+            

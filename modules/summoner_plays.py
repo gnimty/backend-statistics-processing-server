@@ -101,7 +101,7 @@ def update_by_puuid(puuid):
       True
     )
   
-def find_most_champions(puuid):
+def find_most_champions(puuid, queueId=420):
   pipeline_champion =  [
     {
       "$match":{
