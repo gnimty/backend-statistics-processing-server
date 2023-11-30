@@ -1,5 +1,9 @@
+import datetime
+
 class RawMatch():
   def __init__(self, matchId, avg_tier, info, timelines):
+    self.collectAt = datetime.datetime.now()
+    self.queueId = info["queueId"]
     self.metadata = {
       "matchId": matchId,
       "tier": avg_tier
@@ -46,8 +50,8 @@ class RawMatch():
           "wardsKilled": participant["wardsKilled"],
           "wardsPlaced": participant["wardsPlaced"],
           "win": participant["win"],
-          # "damageTakenOnTeamPercentage": participant["damageTakenOnTeamPercentage"],
-          # "teamDamagePercentage": participant["teamDamagePercentage"],
+          "damageTakenOnTeamPercentage": participant["challenges"]["damageTakenOnTeamPercentage"],
+          "teamDamagePercentage": participant["challenges"]["teamDamagePercentage"],
           "skillTree":timelines["skillBuild"],
           "itemBuild":timelines["itemBuild"]
         }

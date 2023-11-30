@@ -37,15 +37,20 @@ def get_summoner_by_id(summoner_id, limit=None):
 
 
 def update_total_summoner():
-  entries = []
-
   queues = ["RANKED_SOLO_5x5", "RANKED_FLEX_SR"]
   
   for queue in queues:
+    entries = []
+
     # TODO 이후 master 하위 리그까지 전부 업데이트해야 함
     entries.extend(league_exp_v4.get_top_league("challengerleagues",queue = queue) )
     entries.extend(league_exp_v4.get_top_league("grandmasterleagues", queue = queue))
     entries.extend(league_exp_v4.get_top_league("masterleagues", queue = queue))
+    
+    for entry in entries:
+      summoner.update_by_summoner_brief(entry)
+   
+    entries.clear()
     
     tiers = ["DIAMOND", "EMERALD", "PLATINUM", "GOLD","SILVER","BRONZE","IRON"]
     divisions = ["I", "II", "III", "IV"]
@@ -53,9 +58,10 @@ def update_total_summoner():
     for tier in tiers:
       for division in divisions:
           entries.extend(league_exp_v4.get_summoners_under_master(tier, division, queue = queue))
+          for entry in entries:
+            summoner.update_by_summoner_brief(entry)
+          entries.clear()
     
-    for entry in entries:
-      summoner.update_by_summoner_brief(entry, queue = queue)
 
 def test():
   queues = ["RANKED_SOLO_5x5", "RANKED_FLEX_SR"]

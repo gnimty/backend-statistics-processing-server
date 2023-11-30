@@ -79,9 +79,9 @@ def updateMatch(match_id, limit):
   }
   
   if match["queueId"]==420:
-    mode = "RANK_SOLO"
+    mode = "RANK_SOLO_5x5"
   elif match["queueId"]==440:
-    mode = "RANK_FLEX"
+    mode = "RANK_FLEX_SR"
   else:
     mode = "ETC"
   

@@ -1,6 +1,7 @@
 from enum import Enum
 
 class MMR(Enum):
+    #  추후 개선
     challenger = 2800
     grandmaster = 2800
     master = 2800
@@ -23,4 +24,6 @@ class MMR(Enum):
             return None
         for std_mmr in MMR:
             if mmr >= std_mmr.value:
+                if std_mmr.value>=2800:
+                    return "master"
                 return std_mmr.name

@@ -37,13 +37,10 @@ from riot_requests import summoner_v4
 def summoner_rank_batch():
   """모든 소환사의 rank 정보 업데이트
   
-  Returns:
-      updatedCnt(int) : 랭크 업데이트한 유저 수 
   """
-  updated_cnt = league_entries.update_all()
-  # updated_cnt = league_entries.update_total_summoner()
+  league_entries.update_total_summoner()
   
-  return {"status": "ok", "updatedCnt": updated_cnt}
+  return {"message":"성공적으로 소환사 정보를 업데이트하였습니다."}
 
 # @app.route('/batch/test', methods=["POST"])
 # def summoner_rank_batch_test():
@@ -150,14 +147,6 @@ def generate_crawl_data():
     "message":"챔피언 맵 정보 생성 완료"
   }
   
-@app.route("/test")
-def test():
-  league_entries.test()
-  return {
-    "message":"complete"
-  }
-
-  
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
@@ -170,13 +159,13 @@ if env!="local":
     #   }
     # },
     # [SUMMONER_BATCH_HOUR]시간마다 소환사 정보 배치
-    # {
-    #   "job":summoner_rank_batch,
-    #   "method":"interval",
-    #   "time": {
-    #     "hours": app.config["SUMMONER_BATCH_HOUR"]
-    #   }
-    # },
+    {
+      "job":summoner_rank_batch,
+      "method":"interval",
+      "time": {
+        "hours": app.config["SUMMONER_BATCH_HOUR"]
+      }
+    },
     # 자정에 챔피언 분석 정보 배치
     {
       "job":generate_champion_statistics,
@@ -187,13 +176,13 @@ if env!="local":
     },
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
-    {
-      "job":summoner_match_batch,
-      "method":"cron",
-      "time":{
-        "hour": app.config["MATCH_BATCH_HOUR"]
-      }
-    },
+    # {
+    #   "job":summoner_match_batch,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour": app.config["MATCH_BATCH_HOUR"]
+    #   }
+    # },
     {
       "job":generate_crawl_data,
       "method":"cron",
