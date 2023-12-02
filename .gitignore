@@ -43,9 +43,10 @@ chromedriver-mac-arm64/
 /dev-redis-data
 
 # GCS
-gogole_credential.json
+google_credential.json
 /raw
 /raw.*
-
+/credentials
+/credentials/*
 # Parquet
 *.parquet
