@@ -1,8 +1,24 @@
 from google.cloud import storage
+from google.oauth2 import service_account
 import os
 import log
 logger = log.get_logger()  # 로거
 
+credentials_info = {
+  "type": os.environ.get("GOOGLE_TYPE"),
+  "project_id": os.environ.get("GOOGLE_PROJECT_ID"),
+  "private_key_id": os.environ.get("GOOGLE_PRIVATE_KEY_ID"),
+  "private_key": os.environ.get("GOOGLE_PRIVATE_KEY"),
+  "client_email": os.environ.get("GOOGLE_CLIENT_EMAIL"),
+  "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
+  "auth_uri": os.environ.get("GOOGLE_AUTH_URI"),
+  "token_uri": os.environ.get("GOOGLE_TOKEN_URI"),
+  "auth_provider_x509_cert_url": os.environ.get("GOOGLE_AUTH_PROVIDER"),
+  "client_x509_cert_url": os.environ.get("GOOGLE_CLIENT_CERT_URL"),
+  "universe_domain": os.environ.get("GOOGLE_UNIVERSE_DOMAIN"),
+}
+
+credentials = service_account.Credentials.from_service_account_info(credentials_info)
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./config/gogole_credential.json"
 
 # 현재 스크립트 파일의 경로 얻기
@@ -21,7 +37,7 @@ logger = log.get_logger()  # 로거
 
 
 bucket_name = os.environ.get("GOOGLE_BUCKET_NAME")
-storage_client = storage.Client()
+storage_client = storage.Client(credentials=credentials)
 bucket = storage_client.get_bucket(bucket_name)
 def upload(path_dir, filename):
     blob = bucket.blob(filename)
