@@ -17,6 +17,8 @@ jobs:
           echo "${{ secrets.DEV_ENV }}" > .env
           touch mongo.env
           echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
+          touch google_credential.json
+          echo "${{ secrets.GOOGLE_CREDENTIAL }}" > google_credential.json
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -61,7 +63,6 @@ jobs:
             sudo echo "${{ secrets.DEV_ENV }}" > .env
             sudo echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
             sudo echo "${{ secrets.DEV_COMPOSE_ENV }}" > docker-compose.env
-            sudo echo "${{ secrets.GOOGLE_CREDENTIAL }}" > google_credential.json
             sudo docker-compose -f docker-compose-dev.yml --env-file docker-compose.env down -v
             sudo docker pull ${{ secrets.DEV_DOCKER_REPO }}
             sudo docker-compose -f docker-compose-dev.yml --env-file docker-compose.env up -d --build
