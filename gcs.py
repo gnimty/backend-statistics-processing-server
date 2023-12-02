@@ -5,6 +5,21 @@ logger = log.get_logger()  # 로거
 
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="./config/gogole_credential.json"
 
+# 현재 스크립트 파일의 경로 얻기
+current_script_path = os.path.abspath(__file__)
+
+# 현재 스크립트 파일이 위치한 디렉토리 얻기
+current_directory = os.path.dirname(current_script_path)
+
+# 디렉토리 내의 모든 파일과 폴더 얻기
+all_files = os.listdir(current_directory)
+
+# 파일과 폴더 출력
+for file_or_folder in all_files:
+    print(file_or_folder)
+
+
+
 bucket_name = os.environ.get("GOOGLE_BUCKET_NAME")
 storage_client = storage.Client()
 bucket = storage_client.get_bucket(bucket_name)
