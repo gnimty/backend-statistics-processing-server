@@ -9,6 +9,16 @@ db = Mongo.get_client("riot")
 rd = Redis.get_client()
 col = "version"
 
+# current_data={
+#   "version":None,
+#   "items":None,
+# }
+
+# def init():
+#   update_latest_version()
+#   update_champion_info(current_data["version"])
+#   update_item_info(current_data["version"])
+
 def update_latest_version():
 
   url = "https://ddragon.leagueoflegends.com/api/versions.json"
@@ -17,6 +27,9 @@ def update_latest_version():
   versions = list(response.json())
 
   latest_version = versions[0]
+  
+  logger.info("current version : %s", latest_version)
+  # current_data["version"] = latest_version
   
   rd.set("version", latest_version)
   
@@ -29,7 +42,7 @@ def update_latest_version():
 
   return latest_version
 
-def update_champion_info(latest_version, limit):
+def update_champion_info(latest_version):
 
   url = f"https://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
   response = requests.get(url)
@@ -62,7 +75,7 @@ def update_champion_info(latest_version, limit):
   db["champion_info"].insert_many(champions)
 
   url = f"https://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
-  rotations = get_rotation_champions(limit = limit)
+  rotations = get_rotation_champions()
   
   db["rotations"].delete_many({})
   db["rotations"].insert_many([
@@ -73,8 +86,42 @@ def update_champion_info(latest_version, limit):
     }  for champion_id in rotations
     ])
 
-  latest_version = get_latest_version()
+
+class Item():
+  def __init__(self, id, name, version, itemType = "total", orrnItemFrom=None):
+    self.id = id
+    self.name = name
+    self.version = version
+    self.itemType = itemType
+    self.ornnItemFrom = orrnItemFrom
+    
+
+def update_item_info(latest_version):
+  db["items"].delete_many({"version":latest_version})
+  result:dict = requests.get(f"https://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/item.json").json()
+
+  total_items = []
+
+  for key, value in result["data"].items():
+    if int(key)>9999:
+      continue
+    if value["gold"]["total"]<=2000:
+      if value["gold"]["total"] >= 700 and value["gold"]["total"] <= 1300 and "Boots" not in value["tags"]:
+        total_items.append(Item(key, value.get("name"), latest_version, itemType = "middle"))
+    else:
+      if "into" not in value:
+        if value.get("requiredAlly")=="Ornn" or value.get("gold")["base"]==0:  
+          total_items.append(Item(value["from"][0], result["data"][value["from"][0]].get("name"), latest_version))
+          total_items.append(Item(key, value.get("name"),latest_version, orrnItemFrom=value["from"][0]))
+        else:
+          if "from" in value:
+            total_items.append(Item(key, value.get("name"), latest_version))
   
+  result = [item.__dict__ for item in total_items]
+  
+  db["items"].insert_many(result)
+  
+  # current_data["items"] = result
   
   
 def get_latest_version() -> str:

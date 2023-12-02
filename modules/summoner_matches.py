@@ -60,8 +60,7 @@ def update_total_match_ids(puuid, limit, test = False) -> list:
   
   target_db[col].update_one(
     {'puuid': puuid},
-    {"$set": {"summoner_match_ids": sorted(
-        list(total_list), reverse=True)}},
+    {"$set": {"summoner_match_ids": total_list}},
     True)
 
   return total_list

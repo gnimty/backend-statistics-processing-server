@@ -1,12 +1,11 @@
 import os
 import asyncio
-import requests
-import datetime
+import requests, datetime, random
 from scheduler import start_schedule  # 스케줄러 로드
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
 from flask_request_validator import *  # parameter validate
-from flask import Flask
+from flask import Flask, request
 
 from config.appconfig import current_config  # 최초 환경변수 파일 로드
 from config.mongo import Mongo
@@ -29,8 +28,9 @@ logger.info("%s 환경에서 실행",env)
 Mongo.set_client()
 Redis.set_client()
 
-from modules import summoner, league_entries, match, version, crawl 
+from modules import summoner, league_entries, match, version, crawl, season
 from modules.analysis import champion as champion_analysis
+from modules.raw_match import RawMatch
 from riot_requests import summoner_v4
 
 @app.route('/batch/summoner', methods=["POST"])
@@ -59,6 +59,9 @@ def summoner_match_batch():
   """
 
   puuids = summoner.find_all_puuids()
+  
+  # 균일한 티어대 정보 수집을 위하여 shuffle
+  random.shuffle(puuids)
   
   # 모든 puuid를 탐색하면서 해당 소환사가 진행한 모든 전적 정보 업데이트
   for puuid in puuids:
@@ -134,31 +137,49 @@ def generate_champion_statistics():
 def generate_crawl_data():
   latest_version = version.update_latest_version()
   
-  version.update_champion_info(latest_version, app.config["BATCH_LIMIT"])
+  version.update_champion_info(latest_version)
+  version.update_item_info(latest_version)
   
   crawl.update_patch_note_summary(latest_version)
   crawl.update_sale_info()
   
   # API 서버에 알리기
-  requests.patch(
-    url=f"{app.config['COMMUNITY_HOST']}/asset/champion")
+  try:
+    requests.patch(url=f"{app.config['COMMUNITY_HOST']}/asset/champion", timeout=4)
+  except Exception:
+    logger.error("API 서버 동기화에 실패했습니다.")
   
   return {
     "message":"챔피언 맵 정보 생성 완료"
   }
+
+@app.route("/season/date", methods = ["PATCH"])
+def update_season_starts():
+  data = request.get_json()
   
+  try:
+    startAt = data["startsAt"]
+    epoch_seconds = int(datetime.datetime.strptime(startAt, "%Y%m%d%H%M%S").timestamp())
+    season.update_season(epoch_seconds)
+    
+  except Exception:
+    return {
+        "message":"잘못된 날짜 정보입니다."
+      }
+
+@app.route("/flushes")
+def flsuh_raw_datas():
+  RawMatch.raw_to_parquet_and_upload()
+  return {
+    "message":"raw data 전송 완료"
+  }
+
+
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
   start_schedule([
-    # {
-    #   "job":summoner_rank_batch_test,
-    #   "method":"interval",
-    #   "time": {
-    #     "hours": app.config["SUMMONER_BATCH_HOUR"]
-    #   }
-    # },
-    # [SUMMONER_BATCH_HOUR]시간마다 소환사 정보 배치
+    # SUMMONER_BATCH_HOUR시간마다 소환사 정보 배치
     {
       "job":summoner_rank_batch,
       "method":"interval",
@@ -174,15 +195,24 @@ if env!="local":
         "hour": 0
       }
     },
+    # 수집한 raw data 압축하여 cloud로 전송
+    {
+      "job":flsuh_raw_datas,
+      "method":"cron",
+      "time":{
+        "hour":0
+      }
+    },
+    
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
-    # {
-    #   "job":summoner_match_batch,
-    #   "method":"cron",
-    #   "time":{
-    #     "hour": app.config["MATCH_BATCH_HOUR"]
-    #   }
-    # },
+    {
+      "job":summoner_match_batch,
+      "method":"interval",
+      "time": {
+        "hours": app.config["MATCH_BATCH_HOUR"]
+      }
+    },
     {
       "job":generate_crawl_data,
       "method":"cron",

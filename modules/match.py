@@ -9,6 +9,7 @@ from community import csmq
 from modules.tier_division_mmr import MMR
 from modules.raw_match import RawMatch
 
+
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
 # _id까지 보내주는 dump_utils 사용하거나 다시 db에서 조회하는 방법으로 가야 할듯
@@ -46,7 +47,7 @@ def updateMatch(match_id, limit):
 
   if match: # DB에 match info가 이미 존재하면 업데이트 안함
     return
-  
+
   data = match_v4.get_by_match_id(match_id, limit)
   
   result = data["result"]
@@ -78,12 +79,10 @@ def updateMatch(match_id, limit):
     "earlyEnded": False
   }
   
-  if match["queueId"]==420:
-    mode = "RANK_SOLO_5x5"
-  elif match["queueId"]==440:
+  if match["queueId"]==440:
     mode = "RANK_FLEX_SR"
-  else:
-    mode = "ETC"
+  else: 
+    mode = "RANK_SOLO_5x5"
   
   for team in info["teams"]:
     info_teams.append({
@@ -106,12 +105,12 @@ def updateMatch(match_id, limit):
   for participant in info["participants"]:
     lane = participant["teamPosition"]
     
-    if lane not in ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]:
-      logger.warning(f"잘못된 라인 정보가 들어왔습니다. {lane}")
-    elif lane == "UTILITY":
-        lane=="SUPPORT"
-    elif lane == "BOTTOM":
-        lane=="ADC"
+    # if lane not in ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]:
+    #   logger.warning(f"잘못된 라인 정보가 들어왔습니다. {lane}")
+    # elif lane == "UTILITY":
+    #     lane=="SUPPORT"
+    # elif lane == "BOTTOM":
+    #     lane=="ADC"
     
     challenges=participant["challenges"]
     
@@ -131,12 +130,11 @@ def updateMatch(match_id, limit):
       win="true"
     else:
       win="false"
+    
+    history = find_history_by_std_date(participant["puuid"], match["gameStartAt"], mode)
       
-    if mode!="ETC": # 솔로 랭크나 자유 랭크 게임 정보가 아닐 경우 소환사 티어 정보를 가져오기
-      history = find_history_by_std_date(participant["puuid"], match["gameStartAt"], mode)
-      
-      if history["queue"]!=None:
-        summoner_tiers.append(MMR.rank_to_mmr(history["queue"], history["tier"], history["leaguePoints"]))
+    if history["queue"]!=None:
+      summoner_tiers.append(MMR.rank_to_mmr(history["queue"], history["tier"], history["leaguePoints"]))
       
     # 게임 조기 종료
     if participant["gameEndedInEarlySurrender"]:
@@ -237,22 +235,19 @@ def updateMatch(match_id, limit):
   
   raw = RawMatch(match_id, avg_tier, info, info_timelines)
   
-  
   db["matches"].insert_one(match)
   db["teams"].insert_many(info_teams)
   db["participants"].insert_many(info_participants)
   db["raw"].insert_one(raw.__dict__)
-    
-
 
 def update_matches_by_puuid(puuid, limit=None):
   match_ids = summoner_matches.update_total_match_ids(puuid, limit)
   
   for match_id in match_ids:
-    try:
-      updateMatch(match_id, limit)
-    except Exception:
-      logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
+    # try:
+    updateMatch(match_id, limit)
+    # except Exception:
+    #   logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
   
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
   summoner_plays.update_by_puuid(puuid)

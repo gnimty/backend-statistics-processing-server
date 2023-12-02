@@ -42,12 +42,12 @@ def delayable_request(url, timeout=10, limit = None) -> any:
 
   rate_limit_count = get_rate_limit_cnt(
       response.headers["X-App-Rate-Limit-Count"])
-  logger.info("rate_limit_count = %s", rate_limit_count)
+  # logger.info("rate_limit_count = %s", rate_limit_count)
 
   # Rate Limit이 시스템에서 설정한 임계점 돌파 시 request 속도 slow down
-  if rate_limit_count >= limit:
-    logger.info("Batch count 소모 시점이 도달하였습니다. 모두 소모되었습니다. 10초 후 실행")
-    time.sleep(10)
+  # if rate_limit_count >= limit:
+  #   logger.info("Batch count 소모 시점이 도달하였습니다. 모두 소모되었습니다. 10초 후 실행")
+  #   time.sleep(10)
 
   return response.json()
 

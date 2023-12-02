@@ -42,4 +42,10 @@ chromedriver-mac-arm64/
 # redis
 /dev-redis-data
 
+# GCS
+gogole_credential.json
+/raw
+/raw.*
 
+# Parquet
+*.parquet

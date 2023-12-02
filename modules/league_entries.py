@@ -1,6 +1,6 @@
 from riot_requests import league_exp_v4
 import logging
-from modules import summoner, summoner_matches
+from modules import summoner
 from error.custom_exception import RequestDataNotExists
 
 logger = logging.getLogger("app")

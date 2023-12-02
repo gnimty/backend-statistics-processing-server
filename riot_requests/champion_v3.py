@@ -3,10 +3,10 @@ from riot_requests.common import delayable_request
 import log
 logger = log.get_logger()
 
-def get_rotation_champions(limit) -> list:
+def get_rotation_champions() -> list:
   
   url = f"https://kr.api.riotgames.com/lol/platform/v3/champion-rotations"
-  result = delayable_request(url, limit)
+  result = delayable_request(url)
   
   if "freeChampionIdsForNewPlayers" not in result:
     raise CustomUserError(
