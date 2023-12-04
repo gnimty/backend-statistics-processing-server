@@ -167,7 +167,7 @@ class RawMatch():
         parquets.append(parquet_filename)
       
       # 모두 처리 성공 시 gcs에 보낸 후 delete
-      # upload_many(cls.PATH_DIR, parquets)
-      # cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
+      upload_many(cls.PATH_DIR, parquets)
+      cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
     except Exception as e:
       print(e)
