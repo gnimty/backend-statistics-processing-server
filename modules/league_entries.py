@@ -2,8 +2,16 @@ from riot_requests import league_exp_v4
 import logging
 from modules import summoner
 from error.custom_exception import RequestDataNotExists
+import threading
+
 
 logger = logging.getLogger("app")
+
+def task(tier, division, queue):
+  entries = league_exp_v4.get_summoners_under_master(tier, division, queue = queue)
+  
+  for entry in entries:
+    summoner.update_by_summoner_brief(entry)
 
 def update_all() -> int:
   """소환사 랭킹 정보 모두 업데이트
@@ -63,18 +71,33 @@ def update_total_summoner():
           entries.clear()
     
 
-def test():
+def collect_all_summoners():
   queues = ["RANKED_SOLO_5x5", "RANKED_FLEX_SR"]
   
+  entries = []
+
+  # TODO 이후 master 하위 리그까지 전부 업데이트해야 함
+  entries.extend(league_exp_v4.get_top_league("challengerleagues",queue = queue) )
+  entries.extend(league_exp_v4.get_top_league("grandmasterleagues", queue = queue))
+  entries.extend(league_exp_v4.get_top_league("masterleagues", queue = queue))
+  
+  for entry in entries:
+    summoner.update_by_summoner_brief(entry)
+  
+  del entries
+  
   for queue in queues:
-    entries = []
-    entries.extend(league_exp_v4.get_top_league("challengerleagues",queue = queue) )
-    # tiers = ["DIAMOND"]
-    # divisions = ["I"]
+    threads = []
     
-    # for tier in tiers:
-    #   for division in divisions:
-    #       entries.extend(league_exp_v4.get_summoners_under_master(tier, division, queue = queue))
+    tiers = ["DIAMOND", "EMERALD", "PLATINUM", "GOLD","SILVER","BRONZE","IRON"]
+    divisions = ["I", "II", "III", "IV"]
     
-    for entry in entries:
-      summoner.update_by_summoner_brief(entry)
+    for tier in tiers:
+      for division in divisions:
+        t = threading.Thread(target = task, args = (tier, division, queue))
+        t.start()
+        threads.append(t)
+
+    for thread in threads:
+      thread.join()
+    

@@ -2,6 +2,7 @@ import os
 import asyncio
 import requests, datetime, random
 import psutil
+
 from scheduler import start_schedule  # 스케줄러 로드
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
@@ -193,45 +194,53 @@ def get_memory_usage():
     "memory_usage_percent":f"{memory_usage_percent}%",
     
   }
+  
+@app.route("/collect")
+def test():
+  league_entries.collect_all_summoners()
+    
+  return {
+    "message":"success"
+  }
 
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
   start_schedule([
     # SUMMONER_BATCH_HOUR시간마다 소환사 정보 배치
-    {
-      "job":summoner_rank_batch,
-      "method":"interval",
-      "time": {
-        "hours": app.config["SUMMONER_BATCH_HOUR"]
-      }
-    },
+    # {
+    #   "job":summoner_rank_batch,
+    #   "method":"interval",
+    #   "time": {
+    #     "hours": app.config["SUMMONER_BATCH_HOUR"]
+    #   }
+    # },
     # 자정에 챔피언 분석 정보 배치
-    {
-      "job":generate_champion_statistics,
-      "method":"cron",
-      "time":{
-        "hour": 0
-      }
-    },
+    # {
+    #   "job":generate_champion_statistics,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour": 0
+    #   }
+    # },
     # 수집한 raw data 압축하여 cloud로 전송
-    {
-      "job":flsuh_raw_datas,
-      "method":"cron",
-      "time":{
-        "hour":0
-      }
-    },
+    # {
+    #   "job":flsuh_raw_datas,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour":0
+    #   }
+    # },
     
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
-    {
-      "job":summoner_match_batch,
-      "method":"interval",
-      "time": {
-        "hours": app.config["MATCH_BATCH_HOUR"]
-      }
-    },
+    # {
+    #   "job":summoner_match_batch,
+    #   "method":"interval",
+    #   "time": {
+    #     "hours": app.config["MATCH_BATCH_HOUR"]
+    #   }
+    # },
     {
       "job":generate_crawl_data,
       "method":"cron",
