@@ -154,7 +154,7 @@ class RawMatch():
       print(e)
   
   @classmethod
-  def parquet_test(cls):
+  def parquet_test(cls, scale:int):
     current_date = datetime.datetime.now()
     formatted_date = current_date.strftime('%Y-%m-%d-%H-%M-%S')
     
@@ -163,7 +163,7 @@ class RawMatch():
     try:
       for queueId, queue in cls.QUEUE.items():
         # 1. queueId에 해당하는 raw data 불러오기
-        result = list(cls.raw_col.find({"queueId":queueId, "collectAt":{"$lte":current_date}}, {"_id":0}).limit(100))
+        result = list(cls.raw_col.find({"queueId":queueId, "collectAt":{"$lte":current_date}}, {"_id":0}).limit(scale))
         
         # 2. parquet 파일로 압축
         logger.info("queueId = %s에 해당하는 raw 데이터 수 : %d", queueId, len(result))
