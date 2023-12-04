@@ -161,15 +161,18 @@ class RawMatch():
     try:
       for queueId, queue in cls.QUEUE.items():
         # 1. queueId에 해당하는 raw data 불러오기
-        result = list(cls.raw_col.find({"queueId":queueId, "collectAt":{"$lte":current_date}}, {"_id":0}).skip(100))
+        result = list(cls.raw_col.find({"queueId":queueId, "collectAt":{"$lte":current_date}}, {"_id":0}).limit(100))
         
         # 2. parquet 파일로 압축
+        logger.info("queueId = %s에 해당하는 raw 데이터 수 : %d", queueId, len(result))
         # 솔로 랭크 : {YYYY_MM_DD}_RANK_SOLO.parquet
         # 자유 랭크 : {YYYY_MM_DD}_RANK_FLEX.parquet
         # 칼바람 나락 : {YYYY_MM_DD}_ARAM.parquet
         df = pd.json_normalize(result)
+        logger.info("raw data normalize 완료")
         parquet_filename = f"{formatted_date}_{queue}.parquet"
         df.to_parquet(f"{cls.PATH_DIR}/{formatted_date}_{queue}.parquet", engine='fastparquet', compression="snappy")
+        logger.info("dataframe to parquet..")
         parquets.append(parquet_filename)
       
       # 모두 처리 성공 시 gcs에 보낸 후 delete

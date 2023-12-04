@@ -75,6 +75,11 @@ class Mongo:
         ("plays", DESCENDING),
         ("win_rate", DESCENDING),
     ], name="champion_statistics_index")
+    
+    raw_index = IndexModel([
+        ("collectAt", ASCENDING)
+    ], name = "raw_index")
+    
 
     db.summoners.create_indexes([summoners_index])
     db.summoner_history.create_indexes([summoner_history_index])
@@ -87,3 +92,4 @@ class Mongo:
     db.champion_statistics.create_indexes([champion_statistics_index])
     db.teams.create_indexes([teams_index])
     db.summoner_plays.create_indexes([summoner_plays_index])
+    db.raw.create_indexes([raw_index])
