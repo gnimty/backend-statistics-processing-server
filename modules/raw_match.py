@@ -5,6 +5,8 @@ from config.mongo import Mongo
 import pandas as pd
 from gcs import upload_many
 import os
+import log
+logger = log.get_logger()  # 로거
 
 def game_version_to_api_version(version):
   return version[:-1]+"1"
@@ -126,13 +128,40 @@ class RawMatch():
   @classmethod
   def raw_to_parquet_and_upload(cls):
     current_date = datetime.datetime.now()
-    formatted_date = current_date.strftime('%Y-%m-%d')
+    formatted_date = current_date.strftime('%Y-%m-%d-%H-%M-%S')
     
+    logger.info("현재 시간 : %s", formatted_date)
     parquets = []
     try:
       for queueId, queue in cls.QUEUE.items():
         # 1. queueId에 해당하는 raw data 불러오기
         result = list(cls.raw_col.find({"queueId":queueId, "collectAt":{"$lte":current_date}}, {"_id":0}))
+        
+        logger.info("queueId = %s에 해당하는 raw 데이터 수 : %d", queueId, len(result))
+        
+        # 2. parquet 파일로 압축
+        df = pd.json_normalize(result)
+        parquet_filename = f"{formatted_date}_{queue}.parquet"
+        df.to_parquet(f"{cls.PATH_DIR}/{formatted_date}_{queue}.parquet", engine='fastparquet', compression="snappy")
+        parquets.append(parquet_filename)
+      
+      # 모두 처리 성공 시 gcs에 보낸 후 delete
+      upload_many(cls.PATH_DIR, parquets)
+      cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
+    except Exception as e:
+      print(e)
+  
+  @classmethod
+  def parquet_test(cls):
+    current_date = datetime.datetime.now()
+    formatted_date = current_date.strftime('%Y-%m-%d-%H-%M-%S')
+    
+    logger.info("현재 시간 : %s", formatted_date)
+    parquets = []
+    try:
+      for queueId, queue in cls.QUEUE.items():
+        # 1. queueId에 해당하는 raw data 불러오기
+        result = list(cls.raw_col.find({"queueId":queueId, "collectAt":{"$lte":current_date}}, {"_id":0}).skip(100))
         
         # 2. parquet 파일로 압축
         # 솔로 랭크 : {YYYY_MM_DD}_RANK_SOLO.parquet
@@ -145,9 +174,8 @@ class RawMatch():
       
       # 모두 처리 성공 시 gcs에 보낸 후 delete
       upload_many(cls.PATH_DIR, parquets)
-      cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
+      # cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
     except Exception as e:
       print(e)
-    
     
     

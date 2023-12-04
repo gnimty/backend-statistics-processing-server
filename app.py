@@ -32,6 +32,7 @@ from modules import summoner, league_entries, match, version, crawl, season
 from modules.analysis import champion as champion_analysis
 from modules.raw_match import RawMatch
 from riot_requests import summoner_v4
+from gcs import upload
 
 @app.route('/batch/summoner', methods=["POST"])
 def summoner_rank_batch():
@@ -167,12 +168,37 @@ def update_season_starts():
         "message":"잘못된 날짜 정보입니다."
       }
 
-@app.route("/flushes")
+@app.route("/flush")
 def flsuh_raw_datas():
   RawMatch.raw_to_parquet_and_upload()
+  
   return {
     "message":"raw data 전송 완료"
   }
+  
+@app.route("/test/gcs")
+def gcs_test():
+  
+  formatted_date = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+  filename = f'{formatted_date}_test.txt'
+  
+  with open(filename, 'w') as file:
+    # 파일을 열었지만 아무 내용도 쓰지 않습니다.
+    pass
+  
+  upload("./", filename, delete=True)
+  
+  return {
+    "message":"gcs_test 완료"
+  }  
+  
+@app.route("/test/parquet")
+def parquet_test():
+  RawMatch.parquet_test()
+  return {
+    "message":"parquet_test 완료"
+  }  
+
 
 
 if env!="local":
