@@ -149,6 +149,7 @@ class RawMatch():
             break
           
           result.extend(temp_result)
+          del temp_result
           page+=1
         
         logger.info("queueId = %s에 해당하는 결과 : %d개", queueId, len(result))
@@ -157,6 +158,7 @@ class RawMatch():
         # 자유 랭크 : {YYYY_MM_DD}_RANK_FLEX.parquet
         # 칼바람 나락 : {YYYY_MM_DD}_ARAM.parquet
         df = pd.DataFrame(result)
+        del result
         logger.info("dataframe 변환 완료")
         parquet_filename = f"{formatted_date}_{queue}.parquet"
         

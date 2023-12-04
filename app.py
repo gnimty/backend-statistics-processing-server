@@ -1,6 +1,7 @@
 import os
 import asyncio
 import requests, datetime, random
+import psutil
 from scheduler import start_schedule  # 스케줄러 로드
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
@@ -176,6 +177,23 @@ def flsuh_raw_datas():
     "message":"raw data 전송 완료"
   }
 
+@app.route("/memory-usage")
+def get_memory_usage():
+  
+  memory_usage_dict = dict(psutil.virtual_memory()._asdict())
+  memory_usage_percent = memory_usage_dict['percent']
+  pid = os.getpid()
+  current_process = psutil.Process(pid)
+  current_process_memory_usage_as_KB = current_process.memory_info()[0] / 2.**20
+  print(f"AFTER  CODE: Current memory KB   : {current_process_memory_usage_as_KB: 9.3f} KB")
+    
+    
+  return {
+    "memory_usage":f"{current_process_memory_usage_as_KB: 9.3f} KB",
+    "memory_usage_percent":f"{memory_usage_percent}%",
+    
+  }
+
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
@@ -227,5 +245,6 @@ if __name__ == "__main__":
   app.run(
     host = app.config["FLASK_HOST"], 
     port=app.config["FLASK_PORT"],
-    debug=bool(int(app.config["FLASK_DEBUG"]))
+    debug=bool(int(app.config["FLASK_DEBUG"])),
+    processes=4
   )
