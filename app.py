@@ -192,9 +192,9 @@ def gcs_test():
     "message":"gcs_test 완료"
   }  
   
-@app.route("/test/parquet")
-def parquet_test():
-  RawMatch.parquet_test()
+@app.route("/test/parquet/<scale>")
+def parquet_test(scale):
+  RawMatch.parquet_test(int(scale))
   return {
     "message":"parquet_test 완료"
   }  

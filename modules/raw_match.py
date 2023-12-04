@@ -141,8 +141,10 @@ class RawMatch():
         
         # 2. parquet 파일로 압축
         df = pd.json_normalize(result)
+        logger.info("raw data normalize 완료")
         parquet_filename = f"{formatted_date}_{queue}.parquet"
         df.to_parquet(f"{cls.PATH_DIR}/{formatted_date}_{queue}.parquet", engine='fastparquet', compression="snappy")
+        logger.info("dataframe to parquet..")
         parquets.append(parquet_filename)
       
       # 모두 처리 성공 시 gcs에 보낸 후 delete
