@@ -246,5 +246,6 @@ if __name__ == "__main__":
     host = app.config["FLASK_HOST"], 
     port=app.config["FLASK_PORT"],
     debug=bool(int(app.config["FLASK_DEBUG"])),
-    processes=4
+    processes=4,
+    threaded=True
   )
