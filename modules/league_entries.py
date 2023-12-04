@@ -72,21 +72,21 @@ def update_total_summoner():
     
 
 def collect_all_summoners():
-  queues = ["RANKED_SOLO_5x5", "RANKED_FLEX_SR"]
+  # queues = ["RANKED_SOLO_5x5", "RANKED_FLEX_SR"]
   
-  entries = []
+  # entries = []
 
-  for queue in queues:
-  # TODO 이후 master 하위 리그까지 전부 업데이트해야 함
-    entries.extend(league_exp_v4.get_top_league("challengerleagues",queue = queue) )
-    entries.extend(league_exp_v4.get_top_league("grandmasterleagues", queue = queue))
-    entries.extend(league_exp_v4.get_top_league("masterleagues", queue = queue))
+  # for queue in queues:
+  # # TODO 이후 master 하위 리그까지 전부 업데이트해야 함
+  #   entries.extend(league_exp_v4.get_top_league("challengerleagues",queue = queue) )
+  #   entries.extend(league_exp_v4.get_top_league("grandmasterleagues", queue = queue))
+  #   entries.extend(league_exp_v4.get_top_league("masterleagues", queue = queue))
   
-  for entry in entries:
-    summoner.update_by_summoner_brief(entry)
+  # for entry in entries:
+  #   summoner.update_by_summoner_brief(entry)
   
-  del entries
-  
+  # del entries
+  queues = ["RANKED_SOLO_5x5"]
   for queue in queues:
     threads = []
     
