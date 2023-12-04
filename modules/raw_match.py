@@ -138,7 +138,19 @@ class RawMatch():
     try:
       for queueId, queue in cls.QUEUE.items():
         # 1. queueId에 해당하는 raw data 불러오기
-        result = list(cls.raw_col.find({"collectAt":{"$lte":current_date}, "queueId":queueId}, {"_id":0}))
+        result = []
+        page = 0
+        while True:
+          logger.info("queue %s page %d", queue, page)
+          temp_result = list(cls.raw_col.find({"collectAt":{"$lte":current_date}, "queueId":queueId}, {"_id":0})
+                        .skip(page*scale).limit(scale))  
+          
+          if len(temp_result)==0:
+            break
+          
+          result.extend(temp_result)
+          page+=1
+        
         logger.info("queueId = %s에 해당하는 결과 : %d개", queueId, len(result))
         # 2. parquet 파일로 압축
         # 솔로 랭크 : {YYYY_MM_DD}_RANK_SOLO.parquet
@@ -155,7 +167,7 @@ class RawMatch():
         parquets.append(parquet_filename)
       
       # 모두 처리 성공 시 gcs에 보낸 후 delete
-      upload_many(cls.PATH_DIR, parquets)
-      cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
+      # upload_many(cls.PATH_DIR, parquets)
+      # cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
     except Exception as e:
       print(e)
