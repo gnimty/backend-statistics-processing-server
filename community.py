@@ -68,6 +68,6 @@ class CustomSummonerMQ:
       else:
         logger.info(response.json())
     except Exception as e:
-      logger.error("Community API 호출에 실패했습니다. status code = %s", response.status_code)
+      logger.error("Community API 호출에 실패했습니다.")
 
 csmq = CustomSummonerMQ()
