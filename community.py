@@ -60,11 +60,14 @@ class CustomSummonerMQ:
       "summonerUpdates": [summoner.__dict__ for summoner in summoners]
     }
     
-    response = requests.patch(url, json=data)
+    try:
+      response = requests.patch(url, json=data, timeout=5)
 
-    if response.status_code != 200:  #실패 시 
+      if response.status_code != 200:  #실패 시 
+        logger.error("Community API 호출에 실패했습니다. status code = %s", response.status_code)
+      else:
+        logger.info(response.json())
+    except Exception as e:
       logger.error("Community API 호출에 실패했습니다. status code = %s", response.status_code)
-    else:
-      logger.info(response.json())
 
 csmq = CustomSummonerMQ()

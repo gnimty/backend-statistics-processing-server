@@ -6,6 +6,9 @@ import pandas as pd
 from gcs import upload_many
 import os
 import log
+import pyarrow as pa
+import pyarrow.parquet as pq
+
 logger = log.get_logger()  # 로거
 
 def game_version_to_api_version(version):
@@ -124,27 +127,31 @@ class RawMatch():
           "itemBuild":item_builds
         }
       )
-  
+ 
   @classmethod
-  def raw_to_parquet_and_upload(cls):
+  def raw_to_parquet_and_upload(cls, scale:int):
     current_date = datetime.datetime.now()
-    formatted_date = current_date.strftime('%Y-%m-%d-%H-%M-%S')
+    formatted_date = current_date.strftime('%Y%m%d_%H%M%S')
     
     logger.info("현재 시간 : %s", formatted_date)
     parquets = []
     try:
       for queueId, queue in cls.QUEUE.items():
         # 1. queueId에 해당하는 raw data 불러오기
-        result = list(cls.raw_col.find({"queueId":queueId, "collectAt":{"$lte":current_date}}, {"_id":0}))
-        
-        logger.info("queueId = %s에 해당하는 raw 데이터 수 : %d", queueId, len(result))
-        
+        result = list(cls.raw_col.find({"collectAt":{"$lte":current_date}, "queueId":queueId}, {"_id":0}))
+        logger.info("queueId = %s에 해당하는 결과 : %d개", queueId, len(result))
         # 2. parquet 파일로 압축
-        df = pd.json_normalize(result)
-        logger.info("raw data normalize 완료")
+        # 솔로 랭크 : {YYYY_MM_DD}_RANK_SOLO.parquet
+        # 자유 랭크 : {YYYY_MM_DD}_RANK_FLEX.parquet
+        # 칼바람 나락 : {YYYY_MM_DD}_ARAM.parquet
+        df = pd.DataFrame(result)
+        logger.info("dataframe 변환 완료")
         parquet_filename = f"{formatted_date}_{queue}.parquet"
-        df.to_parquet(f"{cls.PATH_DIR}/{formatted_date}_{queue}.parquet", engine='fastparquet', compression="snappy")
-        logger.info("dataframe to parquet..")
+        
+        table = pa.Table.from_pandas(df)
+        # PyArrow Table을 Parquet 파일로 저장
+        pq.write_table(table, f"{cls.PATH_DIR}/{parquet_filename}")
+        logger.info("parquet 변환 완료")
         parquets.append(parquet_filename)
       
       # 모두 처리 성공 시 gcs에 보낸 후 delete
@@ -152,35 +159,3 @@ class RawMatch():
       cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
     except Exception as e:
       print(e)
-  
-  @classmethod
-  def parquet_test(cls, scale:int):
-    current_date = datetime.datetime.now()
-    formatted_date = current_date.strftime('%Y-%m-%d-%H-%M-%S')
-    
-    logger.info("현재 시간 : %s", formatted_date)
-    parquets = []
-    try:
-      for queueId, queue in cls.QUEUE.items():
-        # 1. queueId에 해당하는 raw data 불러오기
-        result = list(cls.raw_col.find({"queueId":queueId, "collectAt":{"$lte":current_date}}, {"_id":0}).limit(scale))
-        
-        # 2. parquet 파일로 압축
-        logger.info("queueId = %s에 해당하는 raw 데이터 수 : %d", queueId, len(result))
-        # 솔로 랭크 : {YYYY_MM_DD}_RANK_SOLO.parquet
-        # 자유 랭크 : {YYYY_MM_DD}_RANK_FLEX.parquet
-        # 칼바람 나락 : {YYYY_MM_DD}_ARAM.parquet
-        df = pd.json_normalize(result)
-        logger.info("raw data normalize 완료")
-        parquet_filename = f"{formatted_date}_{queue}.parquet"
-        df.to_parquet(f"{cls.PATH_DIR}/{formatted_date}_{queue}.parquet", engine='fastparquet', compression="snappy")
-        logger.info("dataframe to parquet..")
-        parquets.append(parquet_filename)
-      
-      # 모두 처리 성공 시 gcs에 보낸 후 delete
-      upload_many(cls.PATH_DIR, parquets)
-      # cls.raw_col.delete_many({"collectAt":{"$lte":current_date}})
-    except Exception as e:
-      print(e)
-    
-    

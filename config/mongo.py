@@ -77,10 +77,10 @@ class Mongo:
     ], name="champion_statistics_index")
     
     raw_index = IndexModel([
-        ("collectAt", ASCENDING)
+        ("collectAt", DESCENDING), 
+        ("queueId", ASCENDING)
     ], name = "raw_index")
     
-
     db.summoners.create_indexes([summoners_index])
     db.summoner_history.create_indexes([summoner_history_index])
     db.summoner_history_flex.create_indexes([summoner_history_flex_index])

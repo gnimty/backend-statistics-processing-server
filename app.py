@@ -170,36 +170,11 @@ def update_season_starts():
 
 @app.route("/flush")
 def flsuh_raw_datas():
-  RawMatch.raw_to_parquet_and_upload()
+  RawMatch.raw_to_parquet_and_upload(scale=10000)
   
   return {
     "message":"raw data 전송 완료"
   }
-  
-@app.route("/test/gcs")
-def gcs_test():
-  
-  formatted_date = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-  filename = f'{formatted_date}_test.txt'
-  
-  with open(filename, 'w') as file:
-    # 파일을 열었지만 아무 내용도 쓰지 않습니다.
-    pass
-  
-  upload("./", filename, delete=True)
-  
-  return {
-    "message":"gcs_test 완료"
-  }  
-  
-@app.route("/test/parquet/<scale>")
-def parquet_test(scale):
-  RawMatch.parquet_test(int(scale))
-  return {
-    "message":"parquet_test 완료"
-  }  
-
-
 
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
