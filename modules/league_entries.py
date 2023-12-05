@@ -11,7 +11,7 @@ def task(tier, division, queue, reverse):
   entries = league_exp_v4.get_summoners_under_master(tier, division, queue = queue)
   
   if reverse:
-    entry = reversed(entry)
+    entries = reversed(entries)
   
   for entry in entries:
     summoner.update_by_summoner_brief(entry)
