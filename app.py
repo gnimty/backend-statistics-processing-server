@@ -237,13 +237,13 @@ if env!="local":
     #   }
     # },
     # 수집한 raw data 압축하여 cloud로 전송
-    # {
-    #   "job":flsuh_raw_datas,
-    #   "method":"cron",
-    #   "time":{
-    #     "hour":0
-    #   }
-    # },
+    {
+      "job":flsuh_raw_datas,
+      "method":"cron",
+      "time":{
+        "hour":0
+      }
+    },
     
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
