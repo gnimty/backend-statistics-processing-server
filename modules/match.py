@@ -199,7 +199,6 @@ def updateMatch(match_id, limit):
   
   for timeline_info in result_timeline["info"]["frames"]:
     for event in timeline_info["events"]:
-      
       # 아이템 구매 내역, 스킬 레벨업 내역이 담긴 event만 추출
       if "type" in event and event["type"] in ["ITEM_PURCHASED","SKILL_LEVEL_UP"]:
         event_type = event["type"]
@@ -221,6 +220,12 @@ def updateMatch(match_id, limit):
         elif event_type=="SKILL_LEVEL_UP":
           target_timeline["skillBuild"].append(event["skillSlot"])
     frameCount+=1
+    
+    if frameCount == 14:
+      for participantId, frame in timeline_info["participantFrames"].items():
+        target_timeline = timelines[int(participantId)]
+        target_timeline["goldsOn14Min"] = frame.get("totalGold")
+    
   info_timelines = list(timelines.values())
   info_participants.sort(key=lambda x:x["participantId"])
   info_timelines.sort(key=lambda x:x["participantId"])
@@ -239,6 +244,10 @@ def updateMatch(match_id, limit):
   db["teams"].insert_many(info_teams)
   db["participants"].insert_many(info_participants)
   db["raw"].insert_one(raw.__dict__)
+
+def update_matches_by_puuids(puuids):
+  for puuid in puuids:
+    update_matches_by_puuid(puuid, test=True)
 
 def update_matches_by_puuid(puuid, limit=None, test = False):
   match_ids = summoner_matches.update_total_match_ids(puuid, limit,test=test)

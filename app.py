@@ -12,6 +12,7 @@ from flask import Flask, request
 from config.appconfig import current_config  # 최초 환경변수 파일 로드
 from config.mongo import Mongo
 from config.redis import Redis
+import threading
 
 from community import csmq
 
@@ -212,9 +213,22 @@ def collect_match():
   
   # 모든 puuid를 탐색하면서 해당 소환사가 진행한 모든 전적 정보 업데이트
   # 10개 구간으로 나누어 진행
-  for puuid in puuids:
-    match.update_matches_by_puuid(puuid, test = True)
+  threads = []
   
+  interval = len(puuids)//10
+  for i in range(10):
+    
+    target_puuids = list(puuids[i:i+interval])
+    t = threading.Thread(target = match.update_matches_by_puuids, args = (target_puuids,))
+    t.start()
+    threads.append(t)
+
+  for thread in threads:
+    thread.join()
+  
+  return {
+    "message":"success"
+  }
 
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")

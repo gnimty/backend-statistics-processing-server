@@ -124,7 +124,8 @@ class RawMatch():
           "skillTree":timelines["skillBuild"],
           "itemStart": item_starts,
           "itemMiddle": item_middle,
-          "itemBuild":item_builds
+          "itemBuild":item_builds,
+          "goldsOn14Min": timelines["goldsOn14Min"]
         }
       )
  
