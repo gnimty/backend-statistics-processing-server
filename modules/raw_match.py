@@ -152,21 +152,20 @@ class RawMatch():
           del temp_result
           page+=1
         
-        logger.info("queueId = %s에 해당하는 결과 : %d개", queueId, len(result))
-        # 2. parquet 파일로 압축
-        # 솔로 랭크 : {YYYY_MM_DD}_RANK_SOLO.parquet
-        # 자유 랭크 : {YYYY_MM_DD}_RANK_FLEX.parquet
-        # 칼바람 나락 : {YYYY_MM_DD}_ARAM.parquet
-        df = pd.DataFrame(result)
-        del result
-        logger.info("dataframe 변환 완료")
-        parquet_filename = f"{formatted_date}_{queue}.parquet"
-        
-        table = pa.Table.from_pandas(df)
-        # PyArrow Table을 Parquet 파일로 저장
-        pq.write_table(table, f"{cls.PATH_DIR}/{parquet_filename}")
-        logger.info("parquet 변환 완료")
-        parquets.append(parquet_filename)
+          # 2. parquet 파일로 압축
+          # 솔로 랭크 : {YYYY_MM_DD}_RANK_SOLO.parquet
+          # 자유 랭크 : {YYYY_MM_DD}_RANK_FLEX.parquet
+          # 칼바람 나락 : {YYYY_MM_DD}_ARAM.parquet
+          df = pd.DataFrame(result)
+          del result
+          logger.info("dataframe 변환 완료")
+          parquet_filename = f"{formatted_date}_{queue}_{page}.parquet"
+          
+          table = pa.Table.from_pandas(df)
+          # PyArrow Table을 Parquet 파일로 저장
+          pq.write_table(table, f"{cls.PATH_DIR}/{parquet_filename}")
+          logger.info("parquet 변환 완료")
+          parquets.append(parquet_filename)
       
       # 모두 처리 성공 시 gcs에 보낸 후 delete
       upload_many(cls.PATH_DIR, parquets)

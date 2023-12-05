@@ -186,7 +186,7 @@ def get_memory_usage():
   pid = os.getpid()
   current_process = psutil.Process(pid)
   current_process_memory_usage_as_KB = current_process.memory_info()[0] / 2.**20
-  print(f"AFTER  CODE: Current memory KB   : {current_process_memory_usage_as_KB: 9.3f} KB")
+  print(f"AFTER  CODE: Current memory KB   : {current_process_memory_usage_as_KB: 9.f} KB")
     
     
   return {
@@ -196,12 +196,25 @@ def get_memory_usage():
   }
   
 @app.route("/collect")
-def test():
-  league_entries.collect_all_summoners()
+def collect_summoners():
+  league_entries.collect_all_summoners(reverse= True)
     
   return {
     "message":"success"
   }
+  
+@app.route("/collect/match")
+def collect_match():
+  puuids = summoner.find_all_puuids()
+  
+  # 균일한 티어대 정보 수집을 위하여 shuffle
+  random.shuffle(puuids)
+  
+  # 모든 puuid를 탐색하면서 해당 소환사가 진행한 모든 전적 정보 업데이트
+  # 10개 구간으로 나누어 진행
+  for puuid in puuids:
+    match.update_matches_by_puuid(puuid, test = True)
+  
 
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")

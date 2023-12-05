@@ -7,8 +7,11 @@ import threading
 
 logger = logging.getLogger("app")
 
-def task(tier, division, queue):
+def task(tier, division, queue, reverse):
   entries = league_exp_v4.get_summoners_under_master(tier, division, queue = queue)
+  
+  if reverse:
+    entry = reversed(entry)
   
   for entry in entries:
     summoner.update_by_summoner_brief(entry)
@@ -71,7 +74,7 @@ def update_total_summoner():
           entries.clear()
     
 
-def collect_all_summoners():
+def collect_all_summoners(reverse= False):
   # queues = ["RANKED_SOLO_5x5", "RANKED_FLEX_SR"]
   
   # entries = []
@@ -95,7 +98,7 @@ def collect_all_summoners():
     
     for tier in tiers:
       for division in divisions:
-        t = threading.Thread(target = task, args = (tier, division, queue))
+        t = threading.Thread(target = task, args = (tier, division, queue, reverse))
         t.start()
         threads.append(t)
 

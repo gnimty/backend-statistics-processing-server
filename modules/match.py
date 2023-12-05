@@ -240,8 +240,8 @@ def updateMatch(match_id, limit):
   db["participants"].insert_many(info_participants)
   db["raw"].insert_one(raw.__dict__)
 
-def update_matches_by_puuid(puuid, limit=None):
-  match_ids = summoner_matches.update_total_match_ids(puuid, limit)
+def update_matches_by_puuid(puuid, limit=None, test = False):
+  match_ids = summoner_matches.update_total_match_ids(puuid, limit,test=test)
   
   for match_id in match_ids:
     try:

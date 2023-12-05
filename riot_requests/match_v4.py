@@ -3,10 +3,12 @@ from flask_api import status
 from riot_requests.common import delayable_request
 from modules.season import season_start_epoch
 import log
+from utils import date_calc
+from datetime import datetime, timedelta
 
 logger = log.get_logger()
 
-def get_summoner_match_ids(puuid, limit = None, start=0, count = 30, queue=420):
+def get_summoner_match_ids(puuid, limit = None, start=0, count = 30, queue=420, test = False):
   """
   유저의 전적 id 리스트 가져오기
   2000 requests every 10 seconds
@@ -24,7 +26,12 @@ def get_summoner_match_ids(puuid, limit = None, start=0, count = 30, queue=420):
       [matchIds]: 전적 id 리스트
   """
   
-  url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue={queue}&start={start}&count={count}&startTime={season_start_epoch}"
+  if test:
+    startTime = date_calc.get_epoch_by_datetime(datetime.now() - timedelta(days = 14))
+  else:
+    startTime = season_start_epoch
+    
+  url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue={queue}&start={start}&count={count}&startTime={startTime}"
   
   result = delayable_request(url, limit)
   
