@@ -250,11 +250,13 @@ def update_matches_by_puuid(puuid, limit=None, test = False):
       logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
   
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
-  summoner_plays.update_by_puuid(puuid)
-  summoner.update_summary(puuid)
   
-  target_summoner = summoner.find_by_puuid(puuid)
-  asyncio.run(csmq.add_summoner(target_summoner))
+  if not test:
+    summoner_plays.update_by_puuid(puuid)
+    summoner.update_summary(puuid)
+    
+    target_summoner = summoner.find_by_puuid(puuid)
+    asyncio.run(csmq.add_summoner(target_summoner))
   
 def short_game_version(version):
   split = version.split(".")[:3]
