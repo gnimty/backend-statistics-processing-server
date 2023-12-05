@@ -138,27 +138,26 @@ class RawMatch():
     try:
       for queueId, queue in cls.QUEUE.items():
         # 1. queueId에 해당하는 raw data 불러오기
-        result = []
         page = 0
         while True:
           logger.info("queue %s page %d", queue, page)
-          temp_result = list(cls.raw_col.find({"collectAt":{"$lte":current_date}, "queueId":queueId}, {"_id":0})
-                        .skip(page*scale).limit(scale))  
+          result = list(cls.raw_col.find({"collectAt":{"$lte":current_date}, "queueId":queueId}, {"_id":0})
+                        .skip(page*scale).limit(scale))
           
-          if len(temp_result)==0:
+          if len(result)==0:
             break
           
-          result.extend(temp_result)
-          del temp_result
-          page+=1
-        
+          logger.info("founded = %d", len(result))
+          
           # 2. parquet 파일로 압축
           # 솔로 랭크 : {YYYY_MM_DD}_RANK_SOLO.parquet
           # 자유 랭크 : {YYYY_MM_DD}_RANK_FLEX.parquet
           # 칼바람 나락 : {YYYY_MM_DD}_ARAM.parquet
           df = pd.DataFrame(result)
-          del result
           logger.info("dataframe 변환 완료")
+          
+          del result
+          
           parquet_filename = f"{formatted_date}_{queue}_{page}.parquet"
           
           table = pa.Table.from_pandas(df)
@@ -166,6 +165,8 @@ class RawMatch():
           pq.write_table(table, f"{cls.PATH_DIR}/{parquet_filename}")
           logger.info("parquet 변환 완료")
           parquets.append(parquet_filename)
+          
+          page+=1
       
       # 모두 처리 성공 시 gcs에 보낸 후 delete
       upload_many(cls.PATH_DIR, parquets)
