@@ -44,6 +44,9 @@ def updateMatch(match_id):
       {"matchId": match_id},
       {"_id": 0}
   )
+  
+  if match_id=="KR_6831842925":
+    pass
 
   if match: # DB에 match info가 이미 존재하면 업데이트 안함
     return
@@ -97,7 +100,7 @@ def updateMatch(match_id):
       "totalKills":team["objectives"]["champion"]["kills"],
     })
   
-  if info_teams[0]["win"]=="true":
+  if info_teams[0]["win"]==True:
     win_team_id=info_teams[0]["teamId"]
   else:
     win_team_id=info_teams[1]["teamId"]
@@ -240,6 +243,7 @@ def updateMatch(match_id):
   
   raw = RawMatch(match_id, avg_tier, info, info_timelines)
   
+  # insert 중복 일어남
   db["matches"].insert_one(match)
   db["teams"].insert_many(info_teams)
   db["participants"].insert_many(info_participants)

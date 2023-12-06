@@ -29,6 +29,10 @@ class Mongo:
         ("internal_name", ASCENDING),
         ("internal_tagname", ASCENDING)
     ], name="summoners_index")
+    
+    summoners_index_by_internal_tagname = IndexModel([
+        ("internal_tagname", ASCENDING)
+    ], name="summoners_index_by_internal_tagname")
 
     summoner_history_index = IndexModel([
         ("puuid", ASCENDING)
@@ -58,6 +62,12 @@ class Mongo:
         ("puuid", ASCENDING),
         ("teamId", ASCENDING),
     ], name="participants_index")
+    
+    participants_index_by_puuid = IndexModel([
+        ("puuid", ASCENDING),
+        ("queueId", ASCENDING),
+    ], name="participants_index_by_puuid")
+    
 
     teams_index = IndexModel([
         ("matchId", DESCENDING),
@@ -85,12 +95,12 @@ class Mongo:
         ("order",ASCENDING)
     ], name = "version_index")
     
-    db.summoners.create_indexes([summoners_index])
+    db.summoners.create_indexes([summoners_index, summoners_index_by_internal_tagname])
     db.summoner_history.create_indexes([summoner_history_index])
     db.summoner_history_flex.create_indexes([summoner_history_flex_index])
     db.summoner_matches.create_indexes([summoner_matches_index])
     db.matches.create_indexes([matches_index])
-    db.participants.create_indexes([participants_index])
+    db.participants.create_indexes([participants_index, participants_index_by_puuid])
     db.champion_statistics_lane.create_indexes(
         [champion_statistics_lane_index])
     db.champion_statistics.create_indexes([champion_statistics_index])
