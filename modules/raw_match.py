@@ -125,7 +125,7 @@ class RawMatch():
           "itemStart": item_starts,
           "itemMiddle": item_middle,
           "itemBuild":item_builds,
-          "goldsOn14Min": timelines["goldsOn14Min"]
+          "goldsOn14Min": timelines.get("goldsOn14Min")
         }
       )
  
