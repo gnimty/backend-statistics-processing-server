@@ -81,6 +81,10 @@ class Mongo:
         ("queueId", ASCENDING)
     ], name = "raw_index")
     
+    version_index = IndexModel([
+        ("order",ASCENDING)
+    ], name = "version_index")
+    
     db.summoners.create_indexes([summoners_index])
     db.summoner_history.create_indexes([summoner_history_index])
     db.summoner_history_flex.create_indexes([summoner_history_flex_index])
@@ -93,3 +97,4 @@ class Mongo:
     db.teams.create_indexes([teams_index])
     db.summoner_plays.create_indexes([summoner_plays_index])
     db.raw.create_indexes([raw_index])
+    db.version.create_indexes([version_index])

@@ -33,8 +33,8 @@ def update_latest_version():
   
   rd.set("version", latest_version)
   
-  
-  for v in [{"version": version, "order": i} for version, i in zip(versions, range(len(versions)))]:
+  result = [{"version": version, "order": i} for version, i in zip(versions, range(len(versions)))]
+  for v in result:
     db["version"].update_one({"version":v["version"]},
                              {"$set":v}, True)
 
