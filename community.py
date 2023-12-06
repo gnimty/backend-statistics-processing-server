@@ -8,20 +8,26 @@ logger = log.get_logger()
 
 class SummonerUpdateEntry:
   def __init__(self, summoner):
-    self.puuid:str = summoner.get("puuid")
-    self.tier:str = summoner.get("queue")
-    if self.tier:
-      self.tier = self.tier.lower()
-    self.division:int = summoner.get("tier")
-    self.lp:int = summoner.get("leaguePoints")
-    self.mmr:int = summoner.get("mmr")
-    self.mostLanes:list(str) = summoner.get("mostLanes") or []
-    self.mostChampionIds:list(int) = summoner.get("mostChampionIds") or []
-    self.summonerName:str = summoner.get("name")
-    self.iconId:int = summoner.get("profileIconId") or 100
+    self.data = {}
+    self.data["internalName"]:str = summoner.get("internal_name")
+    self.data["name"]:str = summoner.get("name")
+    self.data["internalTagName"]:str = summoner.get("internal_tagname")
+    self.data["tagLine"]:str = summoner.get("tagLine")
+    self.data["puuid"]:str = summoner.get("puuid")
+    self.data["iconId"]:int = summoner.get("profileIconId") or 100
     
-  def toJSON(self):
-	  return json.dumps(self,default=lambda o:o.__dict__,sort_keys=True,indent=4)
+    for suffix, my_suffix in [("",""), ("Flex", "_flex")]:
+      self.data["tier"+suffix]:str = summoner.get("queue")  
+      if self.data["tier"+suffix]:
+        self.data["tier"+suffix] = self.data["tier"+suffix].lower()
+      self.data["division"+suffix]:int = summoner.get("tier"+my_suffix)
+      self.data["lp"+suffix]:int = summoner.get("leaguePoints"+my_suffix)
+      self.data["mmr"+suffix]:int = summoner.get("mmr"+my_suffix)
+      self.data["mostLanes"+suffix]:list(str) = summoner.get("mostLanes"+my_suffix) or []
+      self.data["mostChampionIds"+suffix]:list(int) = summoner.get("mostChampionIds"+my_suffix) or []
+    
+  # def toJSON(self):
+	#   return json.dumps(self.data,default=lambda o:o.__dict__,sort_keys=True,indent=4)
  
 class CustomSummonerMQ:
   '''
@@ -57,7 +63,7 @@ class CustomSummonerMQ:
   def patch_summoners(self, summoners:list):
     url = f"{self.host}/community/summoners"
     data = {
-      "summonerUpdates": [summoner.__dict__ for summoner in summoners]
+      "summonerUpdates": [summoner.data for summoner in summoners]
     }
     
     try:
