@@ -206,6 +206,14 @@ def collect_match():
     "message":"success"
   }
 
+@app.route("/test")
+def test():
+  match.updateMatch("KR_6827706818")
+  
+  return {
+    "message":"success"
+  }
+
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
