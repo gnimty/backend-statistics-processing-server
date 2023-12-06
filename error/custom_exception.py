@@ -49,10 +49,16 @@ class SummonerNotExists(CustomUserError):
         self.error_type = "Summoner Not Exist"
         
 class RequestDataNotExists(CustomUserError):
-    def __init__(self, error_message):
+    def __init__(self, error_message = "result data is empty."):
         self.status_code = status.HTTP_404_NOT_FOUND
         self.error_message = error_message
         self.error_type = "Request Data Not Exist"
+        
+class AlreadyInTask(CustomUserError):
+    def __init__(self, error_message):
+        self.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        self.error_message = error_message
+        self.error_type = "Already In Process"
 
 class ValidateStartIdxParam(AbstractRule):
     def validate(self, value):

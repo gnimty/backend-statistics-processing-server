@@ -5,7 +5,7 @@ from config.mongo import Mongo
 col = "summoner_matches"
 db_riot = Mongo.get_client("riot")
 
-def update_total_match_ids(puuid, limit, test = False) -> list:
+def update_total_match_ids(puuid, collect = False) -> list:
   """
   소환사의 최근 match Id 리스트를 업데이트
 
@@ -42,7 +42,7 @@ def update_total_match_ids(puuid, limit, test = False) -> list:
     # 그렇지 않으면 계속 가져와서 all_matches_ids에 갖다붙이기
     
     while True:
-      results =match_v4.get_summoner_match_ids(puuid, limit=limit, start = start_index, count = 100, queue=queue, test = test)
+      results =match_v4.get_summoner_match_ids(puuid, start = start_index, count = 100, queue=queue, collect = collect)
       
       all_match_ids.update(set(results))
       if len(results)==0 or results[-1] <= latest_match_id:
@@ -54,7 +54,7 @@ def update_total_match_ids(puuid, limit, test = False) -> list:
   
   total_list = sorted(list(all_match_ids), reverse=True)
   
-  if not test:
+  if not collect:
     db_riot[col].update_one(
       {'puuid': puuid},
       {"$set": {"summoner_match_ids": total_list}},

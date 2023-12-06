@@ -49,12 +49,9 @@ def find_one_by_summoner_id(summoner_id):
   
   return summoner
 
-
+# puuid에 해당하는 tagName 및 랭크 정보 업데이트
 def update_by_puuid(puuid, tagName=None):
-  # puuid에 해당하는 tagName 및 랭크 정보 업데이트
-  
   summoner = summoner_v4.get_by_puuid(puuid, tagName=tagName)
-  
   entry = league_exp_v4.get_summoner_by_id(summoner.get("id"))
   
   update(summoner, entry, check_name=True)
@@ -64,7 +61,7 @@ def recursive_tagline_update(summoner):
                                    "puuid":{"$ne":summoner["puuid"]}})
   if matched:
     logger.info("%s와 동일한 internal tagname 소환사 확인, 업데이트", summoner["internal_tagname"])
-    tagName = summoner_v4.get_tagline(matched["puuid"])
+    tagName = summoner_v4.get_tagname_by_puuid(matched["puuid"])
     matched["name"] = tagName["gameName"]
     matched["internal_name"] = makeInternalName(matched["name"])
     matched["tagLine"] = tagName["tagLine"]
@@ -74,17 +71,16 @@ def recursive_tagline_update(summoner):
     logger.info("업데이트 후 internal tagname : %s", matched["internal_tagname"])
     recursive_tagline_update(matched)
     
-    
 
 # 이부분 코드 완전히 개선해야 함
-def update_by_summoner_brief(summoner_brief)->str:
+def update_by_summoner_brief(summoner_brief, collect = False)->str:
   summoner = find_one_by_summoner_id(summoner_brief["summonerId"]) 
   
   if not summoner: # 기존에 존재하지 않는 데이터 -> request를 통해 붙어서 옴
     summoner = summoner_v4.get_by_summoner_id(summoner_brief["summonerId"])
-    update(summoner, summoner_brief, check_name = True)
+    update(summoner, summoner_brief, check_name = True, collect = collect)
   else: # 기존에 존재하는 데이터 -> 랭킹 갱신 시 체크하지 않음
-    update(summoner, summoner_brief)  
+    update(summoner, summoner_brief, collect = collect)  
     
   return summoner["puuid"]
   
@@ -97,7 +93,10 @@ def find_by_puuid(puuid):
   return summoner
 
 
-def update(summoner, summoner_brief, check_name = False, check_refresh = False):
+# check_name : tagName 갱신을 거친 데이터일 때 True -> 업데이트 시 tagName 반영하지 않음
+# check_refresh : 전적 갱신 시 타이머 적용할 때 True -> updateAt 필드를 갱신하지 않음
+# collect : 유저정보 collect 시 호출된 메소드일 때 True -> 소환사 정보 집계 로직을 수행하지 않음
+def update(summoner, summoner_brief, check_name = False, check_refresh = False, collect = False):
   """summoner 정보 업데이트 및 history collection 업데이트
 
   Args:
@@ -162,19 +161,17 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False):
       {"puuid": summoner["puuid"]},
       {"$set": summoner_history},
       True)
-  
-  update_summary(summoner["puuid"])
-  
+    
   if check_refresh:
     summoner["renewableAt"] = datetime.now()
-  else:
+  
+  if not collect:
     asyncio.run(csmq.add_summoner(summoner))
   
   db_riot[col].update_one(
       {"puuid": summoner["puuid"]},
       {"$set": summoner},
       True)
-  
   
   return summoner
 
@@ -246,9 +243,9 @@ def update_summary(puuid):
     {"$set":summoner},
     True)
   
+# summonerMatches에서 최근 20개의 gameId를 가져와서 자주 가는 라인 정보를 보어주기
 def find_most_lane(puuid, queueId=420):
   
-  # 1. summonerMatches에서 최근 20개의 gameId를 가져오기
   pipeline_lane = [
     {"$match":{
       "puuid":puuid,

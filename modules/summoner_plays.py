@@ -4,12 +4,13 @@ from config.mongo import Mongo
 col = "summoner_plays"
 db = Mongo.get_client("riot")
 
-def update_by_puuid(puuid):
+def update_by_puuid(puuid, queueId = 420):
   pipeline = [
     # puuid와 일치하는 participants 정보 가져오기
     {
       '$match':{
-        'puuid': puuid
+        'puuid': puuid,
+        'queueId': queueId
       }
     },
     # championId별로 그룹핑
@@ -85,15 +86,20 @@ def update_by_puuid(puuid):
     }
   ]
   
+  
   # 1. summoner가 play한 participant 정보를 전부 aggregation load
   aggregate_result = list(db["participants"].aggregate(pipeline))
+  
+  for result in aggregate_result:
+    result["queueId"] = queueId
   
   # 2. 이 정보를 summoner_plays collection에 update
   for result in aggregate_result:
     db[col].update_one(
       {
         "puuid": puuid,
-        "championId":result["championId"]
+        "championId":result["championId"],
+        "queueId":queueId
       },
       {
         "$set": result
@@ -105,7 +111,8 @@ def find_most_champions(puuid, queueId=420):
   pipeline_champion =  [
     {
       "$match":{
-        "puuid":puuid
+        "puuid":puuid,
+        "queueId":queueId
       }
     },
     {
@@ -123,6 +130,7 @@ def find_most_champions(puuid, queueId=420):
       }
     }
   ]
+  
   
   aggregated = list(db[col].aggregate(pipeline_champion))
   

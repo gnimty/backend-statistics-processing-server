@@ -71,12 +71,14 @@ def get_top_league(league, queue="RANKED_SOLO_5x5"):
   return entries
 
 
-def get_summoner_by_id(summoner_id, limit=None):
+def get_summoner_by_id(summoner_id):
 
   url = f"https://kr.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}"
   
-  result = delayable_request(url, limit=limit)
-  first = next((item for item in result))
+  ranks = delayable_request(url)
+  
+  first = next((rank for rank in ranks))
+  
   total = {
     "summonerName":first["summonerName"],
     "summonerId":first["summonerId"],
@@ -85,20 +87,20 @@ def get_summoner_by_id(summoner_id, limit=None):
     },
   }
   
-  for item in result:
-    if item["queueType"]=="RANKED_SOLO_5x5":
-      total["queue"] = item["tier"].lower()
-      total["tier"] = item["rank"]
-      total["leaguePoints"] = item["leaguePoints"]
-      total["wins"] = item["wins"]
-      total["losses"] = item["losses"]
+  for rank in ranks:
+    if rank["queueType"]=="RANKED_SOLO_5x5":
+      total["queue"] = rank["tier"].lower()
+      total["tier"] = rank["rank"]
+      total["leaguePoints"] = rank["leaguePoints"]
+      total["wins"] = rank["wins"]
+      total["losses"] = rank["losses"]
       
-    elif item["queueType"]=="RANKED_FLEX_SR":
-      total["queue_flex"] = item["tier"].lower()
-      total["tier_flex"] = item["rank"]
-      total["leaguePoints_flex"] = item["leaguePoints"]
-      total["wins_flex"] = item["wins"]
-      total["losses_flex"] = item["losses"]
+    elif rank["queueType"]=="RANKED_FLEX_SR":
+      total["queue_flex"] = rank["tier"].lower()
+      total["tier_flex"] = rank["rank"]
+      total["leaguePoints_flex"] = rank["leaguePoints"]
+      total["wins_flex"] = rank["wins"]
+      total["losses_flex"] = rank["losses"]
   return total
 
 

@@ -20,7 +20,7 @@ logger = get_logger()
 col = "matches"
 db = Mongo.get_client("riot")
 
-def updateMatch(match_id, limit):
+def updateMatch(match_id):
   """
   특정 matchId로 match, teams, participants 업데이트 후 결과 반환
 
@@ -48,7 +48,7 @@ def updateMatch(match_id, limit):
   if match: # DB에 match info가 이미 존재하면 업데이트 안함
     return
 
-  data = match_v4.get_by_match_id(match_id, limit)
+  data = match_v4.get_by_match_id(match_id)
   
   result = data["result"]
   result_timeline = data["result_timeline"]
@@ -245,23 +245,23 @@ def updateMatch(match_id, limit):
   db["participants"].insert_many(info_participants)
   db["raw"].insert_one(raw.__dict__)
 
-def update_matches_by_puuids(puuids):
+def collect_matches_by_puuids(puuids):
   for puuid in puuids:
-    update_matches_by_puuid(puuid, test=True)
+    update_matches_by_puuid(puuid, collect=True)
 
-def update_matches_by_puuid(puuid, limit=None, test = False):
-  match_ids = summoner_matches.update_total_match_ids(puuid, limit,test=test)
+def update_matches_by_puuid(puuid, collect = False):
+  match_ids = summoner_matches.update_total_match_ids(puuid, collect=collect)
   
   for match_id in match_ids:
     try:
-      updateMatch(match_id, limit)
+      updateMatch(match_id)
     except Exception:
       logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
   
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
-  
-  if not test:
+  if not collect:
     summoner_plays.update_by_puuid(puuid)
+    summoner_plays.update_by_puuid(puuid, queueId=440)
     summoner.update_summary(puuid)
     
     target_summoner = summoner.find_by_puuid(puuid)

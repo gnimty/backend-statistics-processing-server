@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 logger = log.get_logger()
 
-def get_summoner_match_ids(puuid, limit = None, start=0, count = 30, queue=420, test = False):
+def get_summoner_match_ids(puuid, start=0, count = 30, queue=420, collect = False):
   """
   유저의 전적 id 리스트 가져오기
   2000 requests every 10 seconds
@@ -26,19 +26,19 @@ def get_summoner_match_ids(puuid, limit = None, start=0, count = 30, queue=420, 
       [matchIds]: 전적 id 리스트
   """
   
-  if test:
+  if collect:
     startTime = date_calc.get_epoch_by_datetime(datetime.now() - timedelta(days = 14))
   else:
     startTime = season_start_epoch
     
   url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?queue={queue}&start={start}&count={count}&startTime={startTime}"
   
-  result = delayable_request(url, limit)
+  result = delayable_request(url)
   
   return result
 
 
-def get_by_match_id(matchId, limit=None):
+def get_by_match_id(matchId):
   """
   매치 정보 가져오기
   2000 requests every 10 seconds
@@ -54,8 +54,8 @@ def get_by_match_id(matchId, limit=None):
   url = f"https://asia.api.riotgames.com/lol/match/v5/matches/{matchId}"
   
   # 여기서부터는 필수 정보 제외하고 죄다 갖다 버리기
-  result = delayable_request(url, limit)
-  result_timeline = delayable_request(url+'/timeline', limit)
+  result = delayable_request(url)
+  result_timeline = delayable_request(url+'/timeline')
   
   # result와 result_timeline 둘 중 하나도 존재하지 않으면 예외 발생
   if result.get("status") or result_timeline.get("status"):

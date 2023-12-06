@@ -56,7 +56,7 @@ def post_process(summoner, tagName = None):
   del (summoner["accountId"])  # 필요 없는 properties 제거
   
   if tagName == None:
-    tagName = get_tagline(summoner["puuid"])
+    tagName = get_tagname_by_puuid(summoner["puuid"])
   
   summoner["tagLine"] = tagName.get("tagLine")
   summoner["name"] = tagName.get("gameName")
@@ -66,7 +66,7 @@ def post_process(summoner, tagName = None):
   return summoner
   
 
-def get_tagline(puuid):
+def get_tagname_by_puuid(puuid):
   url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
   
   result = delayable_request(url)
@@ -76,7 +76,7 @@ def get_tagline(puuid):
   
   return result
   
-def get_tagline_by_name_and_tag(gameName, tagLine):
+def get_tagname_by_name_and_tagline(gameName, tagLine):
   url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}"
   
   result = delayable_request(url)
