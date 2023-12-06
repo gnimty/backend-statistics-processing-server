@@ -36,7 +36,7 @@ def update_latest_version():
   
   for v in [{"version": version, "order": i} for version, i in zip(versions, range(len(versions)))]:
     db["version"].update_one({"version":v["version"]},
-                             {"$set":v})
+                             {"$set":v}, True)
 
   update_patch_note_image(latest_version)
 

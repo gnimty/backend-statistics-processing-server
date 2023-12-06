@@ -148,7 +148,7 @@ def update_patch_note_image(latest_version):
         src = img_element.get_attribute('src')
         
         db["version"].update_one({"version":latest_version}, 
-                                 {"$set":{"releaseNoteUrl":baseUrl, "releaseNoteImgUrl":src}})
+                                 {"$set":{"releaseNoteUrl":baseUrl, "releaseNoteImgUrl":src}}, True)
         
 def update_patch_note_summary(latest_version):
     '''
@@ -214,7 +214,7 @@ def update_patch_note_summary(latest_version):
         
         db["patch"].insert_many(patches)
         db["version"].update_one({"version":latest_version}, 
-                                 {"$set":{"patchNoteParsed":True}})
+                                 {"$set":{"patchNoteParsed":True}}, True)
         # 2. db["patch"]에 모두 삽입
             
             

@@ -208,7 +208,7 @@ def collect_match():
 
 @app.route("/test")
 def test():
-  match.updateMatch("KR_6827706818")
+  match.updateMatch("KR_6827898809")
   
   return {
     "message":"success"
