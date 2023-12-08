@@ -20,6 +20,66 @@ logger = get_logger()
 col = "matches"
 db = Mongo.get_client("riot")
 
+def delete_participant(match_id, participant_id):
+  db["participants"].delete_one({"matchId":match_id, "participantId":participant_id})
+
+def delete_team(match_id, team_id):
+  db["teams"].delete_one({"matchId":match_id, "teamId":team_id})
+
+def delete_one_by_match_id(match_id):
+  db[col].delete_one({"matchId":match_id})
+
+def get_duplicates():
+  return db[col].aggregate([
+    {
+      "$group": {
+        "_id": "$matchId",
+        "count": { "$sum": 1 },
+      }
+    },
+    {
+      "$match": {
+        "count": { "$gt": 1 }
+      }
+    },
+])
+  
+def get_duplicates_participant():
+  return db["participants"].aggregate([
+    {
+      "$group": {
+        "_id": { "matchId": "$matchId", "participantId": "$participantId" },
+        "count": { "$sum": 1 },
+      }
+    },
+    {
+      "$match": {
+        "count": { "$gt": 1 }
+      }
+    },
+  ])
+  
+  
+  
+def get_duplicates_team():
+  return db["teams"].aggregate([
+    {
+      "$group": {
+        "_id": { "matchId": "$matchId", "teamId": "$teamId" },
+        "count": { "$sum": 1 },
+      }
+    },
+    {
+      "$match": {
+        "count": { "$gt": 1 }
+      }
+    },
+  ])
+  
+
+def delete_match(match_id):
+  db[col].delete_many({"matchId":match_id})
+
 def updateMatch(match_id):
   """
   특정 matchId로 match, teams, participants 업데이트 후 결과 반환

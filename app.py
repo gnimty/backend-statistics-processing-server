@@ -16,6 +16,8 @@ import threading
 
 from community import csmq
 
+from utils.summoner_name import *
+
 app = Flask(__name__)
 env = os.getenv("APP_ENV") or "local"
 app.config.from_object(current_config)  # 기본 앱 환경 가져오기
@@ -60,17 +62,26 @@ def summoner_rank_batch():
 #   logger.info("소환사 배치 스케줄 시작")
 #   return {"message":"scheduler started"}
 
-# 해당 tagName(gameName + tagLine)이 일치하는 소환사 정보 갱신 또는 저장
-@app.route("/lookup/summoner/<gameName>/<tagLine>", methods=["POST"])
-def lookup_summoner(gameName, tagLine):
+# 해당 tagName(gameName + tagLine)이 일치하는 소환사 정보 검색 또는 갱신
+@app.route("/lookup/summoner/<game_name>/<tag_line>", methods=["POST"])
+def lookup_summoner(game_name, tagline):
+  internal_tagname = f"{make_internal_name(game_name)} + {make_tagline(tagline)}"
   
-  tagName = summoner_v4.get_tagname_by_name_and_tagline(gameName, tagLine)
+  found = summoner.find_one_by_internal_tagname(internal_tagname)
   
-  if tagName==None:
+  if not found:
+    return {
+      "message":"소환사 정보가 이미 존재합니다.",
+      "puuid": found["puuid"]
+    }
+    
+  tagname = summoner_v4.get_tagname_by_name_and_tagline(game_name, tagline)
+  
+  if tagname==None:
     raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
   
-  puuid = tagName.get("puuid")
-  summoner.update_by_puuid(puuid, tagName)
+  puuid = tagname.get("puuid")
+  summoner.update_by_puuid(puuid, tagname)
   
   return {
     "message":"해당 소환사 정보가 존재하여 업데이트합니다.",
@@ -106,6 +117,10 @@ def refresh_summoner(puuid):
   
   return {"message":"업데이트 완료"}
     
+@app.route("/refresh/match/<match_id>", methods=["POST"])
+def refresh_match(match_id):
+  match.delete_match(match_id)
+  match.updateMatch(match_id)
     
 @app.route("/batch/champion/statistics", methods=["POST"] )
 def generate_champion_statistics():
@@ -208,11 +223,50 @@ def collect_match():
 
 @app.route("/test")
 def test():
-  match.updateMatch("KR_6827898809")
+  results = list(match.get_duplicates())
+  
+  for result in results:
+    match_id = result["_id"]
+    limit = int(result["count"]) -1 
+    for _ in range(limit):
+      match.delete_one_by_match_id(match_id)
+      
+    logger.info("match id = %s 중복 제거", match_id)
+  
+  results = list(match.get_duplicates_team())
+  
+  for result in results:
+    match_id = result["_id"]["matchId"]
+    team_id = result["_id"]["teamId"]
+    limit = int(result["count"]) - 1 
+    for _ in range(limit):
+      match.delete_team(match_id, team_id)
+    logger.info("match id = %s, team id = %s 중복 제거", match_id, team_id)
+    logger.info("")
+
+  
+  results = list(match.get_duplicates_participant())
+  
+  for result in results:
+    match_id = result["_id"]["matchId"]
+    participant_id = result["_id"]["participantId"]
+    limit = int(result["count"]) - 1 
+    for _ in range(limit):
+      match.delete_participant(match_id, participant_id)
+    logger.info("match id = %s, participant id = %s 중복 제거", match_id, participant_id)
   
   return {
     "message":"success"
   }
+  
+@app.route("/index")
+def index():
+  Mongo.add_index()
+  
+  return {
+    "message":"success"
+  }
+
 
 if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")

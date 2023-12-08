@@ -1,7 +1,7 @@
 from flask_request_validator import AbstractRule
 from flask_request_validator.exceptions import RuleError
 from flask_api import status
-from utils.summoner_name import isValidInternalName, makeInternalName
+from utils.summoner_name import is_valid_internal_name, make_internal_name
 import logging
 
 logger = logging.getLogger("app")
@@ -84,9 +84,9 @@ class ValidatePageParam(AbstractRule):
 class ValidateInternalNameParam(AbstractRule):
     def validate(self, value):
         # logger.info(value)
-        if not isValidInternalName(value):
+        if not is_valid_internal_name(value):
             raise RuleError('internalName의 형식에 맞게 데이터를 지정하세요.')
-        return makeInternalName(value)
+        return make_internal_name(value)
 
 # class IsStr(AbstractRule):
 #     def validate(self, value):

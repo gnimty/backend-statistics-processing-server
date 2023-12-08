@@ -1,5 +1,7 @@
 from error.custom_exception import *
 from riot_requests.common import delayable_request
+from utils.summoner_name import *
+
 import log
 logger = log.get_logger()
 
@@ -34,8 +36,6 @@ def get_by_summoner_id(summoner_id):
   if "id" not in result:
     return None
 
-  
-
   return post_process(result)
 
 def get_by_puuid(puuid, tagName = None):
@@ -61,8 +61,8 @@ def post_process(summoner, tagName = None):
   summoner["tagLine"] = tagName.get("tagLine")
   summoner["name"] = tagName.get("gameName")
   
-  summoner["internal_name"] = makeInternalName(summoner["name"])
-  summoner["internal_tagname"] = f"{summoner['internal_name']}#{summoner['tagLine']}"
+  summoner["internal_name"] = make_internal_name(summoner["name"])
+  summoner["internal_tagname"] = f"{summoner['internal_name']}#{make_tagname(summoner['tagLine'])}"
   return summoner
   
 

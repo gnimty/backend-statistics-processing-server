@@ -22,6 +22,15 @@ class Mongo:
     return cls.mongo_client.get(db)
 
   @classmethod
+  def add_index(cls):
+    db = cls.mongo_client.get("riot")
+      
+    db.matches.create_index("matchId", unique=True)
+    db.participants.create_index([("matchId", 1), ("participantId", 1)], unique=True)
+    db.teams.create_index([("matchId", 1), ("teamId", 1)], unique=True)
+    
+
+  @classmethod
   def init_index(cls, db) -> None:
     summoners_index = IndexModel([
         ("mmr", ASCENDING),

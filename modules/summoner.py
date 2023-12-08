@@ -1,6 +1,6 @@
 from riot_requests import summoner_v4, league_exp_v4
 from datetime import datetime
-from utils.summoner_name import makeInternalName
+from utils.summoner_name import *
 from modules.tier_division_mmr import MMR
 from modules.summoner_plays import find_most_champions
 from config.mongo import Mongo
@@ -28,7 +28,6 @@ def find_all_puuids() -> list:
   
   return [s['puuid'] for s in puuids if 'puuid' in s]
 
-
 def find_one_by_summoner_id(summoner_id):
   """소환사 ID로 소환사 정보 조회
 
@@ -49,6 +48,16 @@ def find_one_by_summoner_id(summoner_id):
   
   return summoner
 
+def find_one_by_internal_tagname(internal_tagname):
+  summoner = db_riot[col].find_one(
+    {"internal_tagname":internal_tagname}
+  )
+  
+  if not summoner:
+    logger.info("소환사 정보가 존재하지 않습니다.")
+  
+  return summoner
+
 # puuid에 해당하는 tagName 및 랭크 정보 업데이트
 def update_by_puuid(puuid, tagName=None):
   summoner = summoner_v4.get_by_puuid(puuid, tagName=tagName)
@@ -63,9 +72,9 @@ def recursive_tagline_update(summoner):
     logger.info("%s와 동일한 internal tagname 소환사 확인, 업데이트", summoner["internal_tagname"])
     tagName = summoner_v4.get_tagname_by_puuid(matched["puuid"])
     matched["name"] = tagName["gameName"]
-    matched["internal_name"] = makeInternalName(matched["name"])
+    matched["internal_name"] = make_internal_name(matched["name"])
     matched["tagLine"] = tagName["tagLine"]
-    matched["internal_tagname"] = matched["internal_name"] + matched["tagLine"]
+    matched["internal_tagname"] = f"{matched['internal_name']}#{make_tagname(matched['tagLine'])}"
     
     db_riot[col].update_one({"puuid":matched["puuid"]}, {"$set":matched})
     logger.info("업데이트 후 internal tagname : %s", matched["internal_tagname"])
