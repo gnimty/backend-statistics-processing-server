@@ -22,7 +22,7 @@ def delayable_request(url, timeout=10) -> any:
   """
   
   logger.info(f'다음으로 request : {url}')
-  response = requests.get(url, headers=headers, timeout=timeout)
+  response = requests.get(url, headers=headers, timeout=timeout, verify=False)
 
   # API Key 만료
   if response.status_code == status.HTTP_403_FORBIDDEN:
