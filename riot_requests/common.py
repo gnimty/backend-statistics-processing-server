@@ -4,6 +4,9 @@ from flask_api import status
 import log
 from error.custom_exception import ForbiddenError
 from config.appconfig import current_config as config
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = log.get_logger()
 
