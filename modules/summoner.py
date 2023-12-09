@@ -23,6 +23,9 @@ division = {
   "IV":4
 }
 
+def delete_one_by_puuid(puuid):
+  db_riot[col].delete_one({"puuid":puuid})
+
 def find_all_puuids() -> list:
   puuids = list(db_riot[col].find({}, {"_id":0, "puuid":1}))
   
@@ -92,6 +95,21 @@ def update_by_summoner_brief(summoner_brief, collect = False)->str:
     update(summoner, summoner_brief, collect = collect)  
     
   return summoner["puuid"]
+
+def get_duplicates():
+  return db_riot[col].aggregate([
+    {
+      "$group": {
+        "_id": "$puuid",
+        "count": { "$sum": 1 },
+      }
+    },
+    {
+      "$match": {
+        "count": { "$gt": 1 }
+      }
+    },
+])
   
 
 def find_by_puuid(puuid):
