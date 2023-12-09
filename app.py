@@ -1,6 +1,6 @@
 import os
 import asyncio
-import requests, datetime, random
+import requests, datetime
 import psutil
 
 from scheduler import start_schedule  # 스케줄러 로드
@@ -12,7 +12,6 @@ from flask import Flask, request
 from config.appconfig import current_config  # 최초 환경변수 파일 로드
 from config.mongo import Mongo
 from config.redis import Redis
-import threading
 
 from community import csmq
 
@@ -32,10 +31,13 @@ logger.info("%s 환경에서 실행",env)
 Mongo.set_client()
 Redis.set_client()
 
-from modules import summoner, league_entries, match, version, crawl, season
+from modules import summoner, league_entries, match, version, crawl, season, summoner_matches
 from modules.analysis import champion as champion_analysis
 from modules.raw_match import RawMatch
 from riot_requests import summoner_v4
+
+from thread_task import CustomMatchThreadTask
+
 
 @app.route('/batch/summoner', methods=["POST"])
 def summoner_rank_batch():
@@ -65,7 +67,7 @@ def summoner_rank_batch():
 # 해당 tagName(gameName + tagLine)이 일치하는 소환사 정보 검색 또는 갱신
 @app.route("/lookup/summoner/<game_name>/<tag_line>", methods=["POST"])
 def lookup_summoner(game_name, tagline):
-  internal_tagname = f"{make_internal_name(game_name)} + {make_tagline(tagline)}"
+  internal_tagname = f"{make_internal_name(game_name)} + {make_tagname(tagline)}"
   
   found = summoner.find_one_by_internal_tagname(internal_tagname)
   
@@ -120,7 +122,7 @@ def refresh_summoner(puuid):
 @app.route("/refresh/match/<match_id>", methods=["POST"])
 def refresh_match(match_id):
   match.delete_match(match_id)
-  match.updateMatch(match_id)
+  match.update_match(match_id)
     
 @app.route("/batch/champion/statistics", methods=["POST"] )
 def generate_champion_statistics():
@@ -197,32 +199,15 @@ def collect_summoners():
   
 @app.route("/collect/match", methods=["POST"])
 def collect_match():
-  puuids = summoner.find_all_puuids()
   
-  # 균일한 티어대 정보 수집을 위하여 shuffle
-  random.shuffle(puuids)
-  
-  # 모든 puuid를 탐색하면서 해당 소환사가 진행한 모든 전적 정보 업데이트
-  # 10개 구간으로 나누어 진행
-  threads = []
-  
-  interval = len(puuids)//10
-  for i in range(10):
-    
-    target_puuids = list(puuids[i:i+interval])
-    t = threading.Thread(target = match.collect_matches_by_puuids, args = (target_puuids,))
-    t.start()
-    threads.append(t)
-
-  for thread in threads:
-    thread.join()
+  CustomMatchThreadTask.start()
   
   return {
     "message":"success"
   }
 
-@app.route("/test")
-def test():
+@app.route("/remove/duplicates")
+def remove_duplicates():
   results = list(match.get_duplicates())
   
   for result in results:
@@ -259,6 +244,12 @@ def test():
     "message":"success"
   }
   
+@app.route("/test")
+def test():
+  match_ids = list(summoner_matches.get_all_match_id_set())[0]["unique_match_ids"]
+  
+  pass
+
 @app.route("/index")
 def index():
   Mongo.add_index()

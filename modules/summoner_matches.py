@@ -5,6 +5,19 @@ from config.mongo import Mongo
 col = "summoner_matches"
 db_riot = Mongo.get_client("riot")
 
+def get_all_match_id_set():
+  return db_riot["summoner_matches"].aggregate([
+    {
+        "$unwind": "$summoner_match_ids"  # 배열을 풀어서 각 match_id를 개별 문서로 만듭니다.
+    },
+    {
+        "$group": {
+            "_id": None,
+            "unique_match_ids": {"$addToSet": "$summoner_match_ids"}  # 중복되지 않는 match id들을 set으로 모읍니다.
+        }
+    }
+])
+
 def update_total_match_ids(puuid, collect = False) -> list:
   """
   소환사의 최근 match Id 리스트를 업데이트

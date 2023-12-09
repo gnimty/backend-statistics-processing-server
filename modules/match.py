@@ -80,7 +80,7 @@ def get_duplicates_team():
 def delete_match(match_id):
   db[col].delete_many({"matchId":match_id})
 
-def updateMatch(match_id):
+def update_match(match_id):
   """
   특정 matchId로 match, teams, participants 업데이트 후 결과 반환
 
@@ -105,8 +105,8 @@ def updateMatch(match_id):
       {"_id": 0}
   )
   
-  if match_id=="KR_6831842925":
-    pass
+  # if match_id=="KR_6831842925":
+  #   pass
 
   if match: # DB에 match info가 이미 존재하면 업데이트 안함
     return
@@ -318,7 +318,7 @@ def update_matches_by_puuid(puuid, collect = False):
   
   for match_id in match_ids:
     try:
-      updateMatch(match_id)
+      update_match(match_id)
     except Exception:
       logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
   
