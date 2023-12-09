@@ -40,7 +40,7 @@ class CustomMatchThreadTask():
       match_ids = summoner_matches.update_total_match_ids(puuid, collect=True)
       
       for match_id in match_ids:
-        if len(cls.match_ids_set) >= 1000:
+        if len(cls.match_ids_queue) >= 1000:
           logger.info("저장된 match id가 너무 많습니다. 10초간 유휴")
           time.sleep(10)
         with cls.set_lock:
