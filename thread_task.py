@@ -87,7 +87,7 @@ class CustomMatchThreadTask():
       
       cls.threads.append(t1)
     
-    for i in range(10):
+    for i in range(50):
       t2 = threading.Thread(target=cls.thread_2 )
       
       cls.threads.append(t2)
