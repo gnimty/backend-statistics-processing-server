@@ -37,7 +37,7 @@ def delayable_request(url, timeout=10) -> any:
     logger.info("API LIMIT이 모두 소모되었습니다. %s초 후 실행", retry_after_time)
 
     time.sleep(retry_after_time)
-    response = requests.get(url, headers=headers, timeout=timeout)
+    response = requests.get(url, headers=headers, timeout=timeout, verify=False)
 
   # rate_limit_count = get_rate_limit_cnt(
   #     response.headers["X-App-Rate-Limit-Count"])
