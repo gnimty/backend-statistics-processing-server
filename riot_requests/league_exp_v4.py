@@ -104,19 +104,13 @@ def get_summoner_by_id(summoner_id):
   return total
 
 
-def get_summoners_under_master(tier, division, queue = "RANKED_SOLO_5x5"):
-  results = []
+def get_summoners_under_master(tier, division, queue = "RANKED_SOLO_5x5", page=0):
   
-  page = 1
+  url = f"https://kr.api.riotgames.com/lol/league-exp/v4/entries/{queue}/{tier}/{division}?page={page}"
+  results = delayable_request(url)
   
-  while True:  
-    url = f"https://kr.api.riotgames.com/lol/league-exp/v4/entries/{queue}/{tier}/{division}?page={page}"
-    result = delayable_request(url)
-    if not result or not isinstance(result, list) or len(result)==0:
-      break
-    
-    results.extend(result)
-    page+=1
+  if not results or not isinstance(results, list) or len(results) == 0:
+    return []
   
   for result in results:
     result["queue"] = str(result["tier"]).lower()
