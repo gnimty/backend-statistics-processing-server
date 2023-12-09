@@ -62,8 +62,6 @@ class CustomMatchThreadTask():
       with cls.queue_lock:
           match_id = cls.match_ids_queue.get()
       # 2번 쓰레드 작업 수행
-      with cls.set_lock:
-          cls.match_ids_set.remove(match_id)
       match.update_match(match_id)
 
   @classmethod
