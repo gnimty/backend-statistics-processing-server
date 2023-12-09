@@ -66,18 +66,18 @@ def summoner_rank_batch():
 
 # 해당 tagName(gameName + tagLine)이 일치하는 소환사 정보 검색 또는 갱신
 @app.route("/lookup/summoner/<game_name>/<tag_line>", methods=["POST"])
-def lookup_summoner(game_name, tagline):
-  internal_tagname = f"{make_internal_name(game_name)} + {make_tagname(tagline)}"
+def lookup_summoner(game_name, tag_line):
+  internal_tagname = f"{make_internal_name(game_name)} + {make_tagname(tag_line)}"
   
   found = summoner.find_one_by_internal_tagname(internal_tagname)
   
-  if not found:
+  if found:
     return {
       "message":"소환사 정보가 이미 존재합니다.",
       "puuid": found["puuid"]
     }
     
-  tagname = summoner_v4.get_tagname_by_name_and_tagline(game_name, tagline)
+  tagname = summoner_v4.get_tagname_by_name_and_tagline(game_name, tag_line)
   
   if tagname==None:
     raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")

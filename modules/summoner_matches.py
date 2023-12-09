@@ -30,47 +30,75 @@ def update_total_match_ids(puuid, collect = False) -> list:
       DataNotExists
   """
 
+  queues = [420,440,450]
+  if not collect:
+    queues.append(430)
+  
   # 가장 최근 match id 가져오기
-  old_matches = db_riot[col].find_one({"puuid": puuid})
+  result = db_riot[col].find_one({"puuid": puuid})
   
-  # 모든 matchId 담을 변수, 최근 matchId 우선 가져오기 (100개씩))
-  all_match_ids = set()
-  
-  # 다음 페이지 조회 시 이용하는 변수
-  start_index=100
-  
-  latest_match_id = "KR_0000000000" #마지막으로 조회한 match id 하한선
-  
-  if old_matches: 
-    latest_match_id = old_matches["summoner_match_ids"][0]
+  if not result:
+    old_matches = { #마지막으로 조회한 match id 하한선
+      420:[],
+      430:[],
+      440:[],
+      450:[],
+    }
   else:
-    old_matches= {
-      "summoner_match_ids":[]
+    old_matches = { #마지막으로 조회한 match id 하한선
+      420:result.get("summoner_match_ids"),
+      430:result.get("summoner_match_ids_blind"),
+      440:result.get("summoner_match_ids_aram"),
+      450:result.get("summoner_match_ids_flex"),
     }
   
-  for queue in [420,430,440,450]:
+  
+  latest_match_id = { #마지막으로 조회한 match id 하한선
+    420:"KR_0000000000",
+    430:"KR_0000000000",
+    440:"KR_0000000000",
+    450:"KR_0000000000",
+  }
+  
+  total = {}
+  
+  for queue in queues:
+    # 모든 matchId 담을 변수, 최근 matchId 우선 가져오기 (100개씩))
+    all_match_ids = set()
+    
+    if old_matches[queue] and len(old_matches[queue])>=1: 
+      latest_match_id[queue] = old_matches[queue][0]
+    else:
+      old_matches[queue] = []
+    
     start_index=0
     
     # API로 최근 전적 가져온 후 그 안에 latest_match_id가 존재하면 db와 sync가 맞음
     # 그렇지 않으면 계속 가져와서 all_matches_ids에 갖다붙이기
-    
     while True:
       results =match_v4.get_summoner_match_ids(puuid, start = start_index, count = 100, queue=queue, collect = collect)
-      
-      all_match_ids.update(set(results))
-      if len(results)==0 or results[-1] <= latest_match_id:
+      if len(results)==0 or results[-1] <= latest_match_id[queue]:
         break
       else:
+        all_match_ids.update(set(results))
         start_index+=100
   
-  all_match_ids.update(old_matches["summoner_match_ids"])
+    all_match_ids.update(old_matches[queue])
   
-  total_list = sorted(list(all_match_ids), reverse=True)
+    total[queue] = sorted(list(all_match_ids), reverse=True)
   
   if not collect:
     db_riot[col].update_one(
       {'puuid': puuid},
-      {"$set": {"summoner_match_ids": total_list}},
-      True)
+      {"$set": {
+        "summoner_match_ids": total.get(420),
+        "summoner_match_ids_blind": total.get(430),
+        "summoner_match_ids_aram": total.get(440),
+        "summoner_match_ids_flex": total.get(450),
+      }}, True)
+
+  total_list = []
+  for match_ids in total.values():
+    total_list.extend(match_ids)
 
   return total_list

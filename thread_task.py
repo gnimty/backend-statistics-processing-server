@@ -47,7 +47,7 @@ class CustomMatchThreadTask():
           if match_id not in cls.match_ids_set:
             cls.match_ids_set.add(match_id)
             with cls.queue_lock:
-                cls.match_ids_queue.put(match_id)
+              cls.match_ids_queue.put(match_id)
 
   # 2번 쓰레드 작업 : queue에서 match_id를 하나씩 가져와서 전적정보 갱신
   @classmethod
@@ -58,11 +58,14 @@ class CustomMatchThreadTask():
       if cls.match_ids_queue.empty():
         time.sleep(5)
         continue
-      
       with cls.queue_lock:
-          match_id = cls.match_ids_queue.get()
+        match_id = cls.match_ids_queue.get()
+        
+      try:
       # 2번 쓰레드 작업 수행
-      match.update_match(match_id)
+        match.update_match(match_id)
+      except Exception as e:
+        logger.info("match id = %s에 해당하는 전적 정보 업데이트를 실패했습니다.")
 
   @classmethod
   def start(cls):

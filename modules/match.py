@@ -142,11 +142,6 @@ def update_match(match_id):
     "earlyEnded": False
   }
   
-  if match["queueId"]==440:
-    mode = "RANK_FLEX_SR"
-  else: 
-    mode = "RANK_SOLO_5x5"
-  
   for team in info["teams"]:
     info_teams.append({
       "matchId" : match_id,
@@ -194,7 +189,8 @@ def update_match(match_id):
     else:
       win="false"
     
-    history = find_history_by_std_date(participant["puuid"], match["gameStartAt"], mode)
+    
+    history = find_history_by_std_date(participant["puuid"], match["gameStartAt"], "RANK_FLEX_SR" if match["queueId"]==440 else "RANK_SOLO_5x5")
       
     if history["queue"]!=None:
       summoner_tiers.append(MMR.rank_to_mmr(history["queue"], history["tier"], history["leaguePoints"]))
@@ -202,7 +198,6 @@ def update_match(match_id):
     # 게임 조기 종료
     if participant["gameEndedInEarlySurrender"]:
       match["earlyEnded"] = True
-    
     
     info_participants.append({
       "matchId" : match_id,
@@ -301,13 +296,14 @@ def update_match(match_id):
   else:
     avg_tier = MMR.mmr_to_tier(sum(summoner_tiers)/len(summoner_tiers))
   
-  raw = RawMatch(match_id, avg_tier, info, info_timelines)
-  
-  # insert 중복 일어남
   db["matches"].insert_one(match)
   db["teams"].insert_many(info_teams)
   db["participants"].insert_many(info_participants)
-  db["raw"].insert_one(raw.__dict__)
+  
+  
+  if match["queueId"]!=430: # 빠른 대전 게임을 제외한 3개의 게임 모드는 raw data로 넘어감
+    raw = RawMatch(match_id, avg_tier, info, info_timelines)
+    db["raw"].insert_one(raw.__dict__)
 
 def collect_matches_by_puuids(puuids):
   for puuid in puuids:
