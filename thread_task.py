@@ -40,8 +40,8 @@ class CustomMatchThreadTask():
       match_ids = summoner_matches.update_total_match_ids(puuid, collect=True)
       
       for match_id in match_ids:
-        if len(cls.match_ids_set) >= 10000:
-          logger.info("저장된 match id가 너무 많습니다. 10초간 휴")
+        if len(cls.match_ids_set) >= 1000:
+          logger.info("저장된 match id가 너무 많습니다. 10초간 유휴")
           time.sleep(10)
         with cls.set_lock:
           if match_id not in cls.match_ids_set:
@@ -80,15 +80,17 @@ class CustomMatchThreadTask():
     
     interval = len(puuids)//10
     
-    for i in range(10):
+    for i in range(3):
       target_puuids = list(puuids[i:i+interval])
       
       t1 = threading.Thread(target = cls.thread_1, args = (target_puuids,))
+      
+      cls.threads.append(t1)
+    
+    for i in range(10):
       t2 = threading.Thread(target=cls.thread_2 )
       
-      cls.threads.extend([t1, t2])
-    
-      # t = threading.Thread(target = match.collect_matches_by_puuids, args = (target_puuids,))\
+      cls.threads.append(t2)
 
     # 쓰레드 시작
     for thread in cls.threads:
