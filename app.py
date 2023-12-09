@@ -246,9 +246,10 @@ def remove_duplicates():
   
 @app.route("/test")
 def test():
-  match_ids = list(summoner_matches.get_all_match_id_set())[0]["unique_match_ids"]
-  
-  pass
+  return {
+    "message":f"{CustomMatchThreadTask.await_match_ids_len()}개 match id 대기 중",
+    "aliveThreads":f"{CustomMatchThreadTask.alive_thread_len()}개"
+  }
 
 @app.route("/index")
 def index():

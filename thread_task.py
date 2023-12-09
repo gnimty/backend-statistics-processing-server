@@ -23,6 +23,15 @@ class CustomMatchThreadTask():
   
   # 쓰레드 생성
   threads = []
+  
+  @classmethod
+  def await_match_ids_len(cls):
+    return len(cls.match_ids_set)
+  
+  @classmethod
+  def alive_thread_len(cls):
+    return len(cls.threads)
+  
 
   # 1번 쓰레드 작업 : puuid 리스트를 받아 해당 puuid별로 summoner_match 최신 값들을 받아서 queue에 삽입
   @classmethod
@@ -31,6 +40,9 @@ class CustomMatchThreadTask():
       match_ids = summoner_matches.update_total_match_ids(puuid, collect=True)
       
       for match_id in match_ids:
+        if len(cls.match_ids_set) >= 10000:
+          logger.info("저장된 match id가 너무 많습니다. 10초간 휴")
+          time.sleep(10)
         with cls.set_lock:
           if match_id not in cls.match_ids_set:
             cls.match_ids_set.add(match_id)
@@ -42,7 +54,11 @@ class CustomMatchThreadTask():
   def thread_2(cls):
     time.sleep(10)  # 1번 쓰레드 작업 시작 후 10초 대기
     
-    while not cls.match_ids_queue.empty():
+    while True:
+      if cls.match_ids_queue.empty():
+        time.sleep(5)
+        continue
+      
       with cls.queue_lock:
           match_id = cls.match_ids_queue.get()
       # 2번 쓰레드 작업 수행
