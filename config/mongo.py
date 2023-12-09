@@ -28,16 +28,17 @@ class Mongo:
     db.matches.create_index("matchId", unique=True)
     db.participants.create_index([("matchId", 1), ("participantId", 1)], unique=True)
     db.teams.create_index([("matchId", 1), ("teamId", 1)], unique=True)
-    
+    db.summoners.create_index("puuid", unique=True)
 
   @classmethod
   def init_index(cls, db) -> None:
-    summoners_index = IndexModel([
-        ("mmr", ASCENDING),
-        ("puuid", ASCENDING),
-        ("internal_name", ASCENDING),
-        ("internal_tagname", ASCENDING)
-    ], name="summoners_index")
+    summoners_index_by_mmr = IndexModel([
+        ("mmr", DESCENDING)
+    ], name="summoners_index_by_mmr")
+    
+    summoners_index_by_mmr_flex = IndexModel([
+        ("mmr_flex", DESCENDING)
+    ], name="summoners_index_by_mmr_flex")
     
     summoners_index_by_internal_tagname = IndexModel([
         ("internal_tagname", ASCENDING)
@@ -104,7 +105,7 @@ class Mongo:
         ("order",ASCENDING)
     ], name = "version_index")
     
-    db.summoners.create_indexes([summoners_index, summoners_index_by_internal_tagname])
+    db.summoners.create_indexes([summoners_index_by_mmr, summoners_index_by_mmr_flex, summoners_index_by_internal_tagname])
     db.summoner_history.create_indexes([summoner_history_index])
     db.summoner_history_flex.create_indexes([summoner_history_flex_index])
     db.summoner_matches.create_indexes([summoner_matches_index])

@@ -208,6 +208,16 @@ def collect_match():
 
 @app.route("/remove/duplicates")
 def remove_duplicates():
+  results = list(summoner.get_duplicates())
+  for result in results:
+    puuid = result["_id"]
+    limit = int(result["count"]) - 1 
+    for _ in range(limit):
+      summoner.delete_one_by_puuid(puuid)
+      
+    logger.info("puuid = %s 중복 제거", puuid)
+  
+  
   results = list(match.get_duplicates())
   
   for result in results:
