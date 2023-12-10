@@ -48,8 +48,8 @@ def update_total_match_ids(puuid, collect = False) -> list:
     old_matches = { #마지막으로 조회한 match id 하한선
       420:result.get("summoner_match_ids"),
       430:result.get("summoner_match_ids_blind"),
-      440:result.get("summoner_match_ids_aram"),
-      450:result.get("summoner_match_ids_flex"),
+      440:result.get("summoner_match_ids_flex"),
+      450:result.get("summoner_match_ids_aram"),
     }
   
   
@@ -93,8 +93,8 @@ def update_total_match_ids(puuid, collect = False) -> list:
       {"$set": {
         "summoner_match_ids": total.get(420),
         "summoner_match_ids_blind": total.get(430),
-        "summoner_match_ids_aram": total.get(440),
-        "summoner_match_ids_flex": total.get(450),
+        "summoner_match_ids_flex": total.get(440),
+        "summoner_match_ids_aram": total.get(450),
       }}, True)
 
   total_list = []

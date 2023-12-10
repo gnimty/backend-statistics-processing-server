@@ -277,14 +277,22 @@ if env!="local":
   logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
   
   start_schedule([
+    # {
+    #   "job":print_sec,
+    #   "method":"interval",
+    #   "time":{
+    #     "seconds":10
+    #   }
+    # }
+    
     # SUMMONER_BATCH_HOUR시간마다 소환사 정보 배치
-    {
-      "job":summoner_rank_batch,
-      "method":"interval",
-      "time": {
-        "hours": app.config["SUMMONER_BATCH_HOUR"]
-      }
-    },
+    # {
+    #   "job":summoner_rank_batch,
+    #   "method":"interval",
+    #   "time": {
+    #     "hours": app.config["SUMMONER_BATCH_HOUR"]
+    #   }
+    # },
     # 자정에 챔피언 분석 정보 배치
     # {
     #   "job":generate_champion_statistics,
@@ -294,13 +302,13 @@ if env!="local":
     #   }
     # },
     # 수집한 raw data 압축하여 cloud로 전송
-    {
-      "job":flsuh_raw_datas,
-      "method":"cron",
-      "time":{
-        "hour":0
-      }
-    },
+    # {
+    #   "job":flsuh_raw_datas,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour":0
+    #   }
+    # },
     
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
@@ -311,13 +319,13 @@ if env!="local":
     #     "hours": app.config["MATCH_BATCH_HOUR"]
     #   }
     # },
-    {
-      "job":generate_crawl_data,
-      "method":"cron",
-      "time":{
-        "hour": 4
-      }
-    }
+    # {
+    #   "job":generate_crawl_data,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour": 4
+    #   }
+    # }
   ])
 
 if __name__ == "__main__":
@@ -325,5 +333,5 @@ if __name__ == "__main__":
     host = app.config["FLASK_HOST"], 
     port=app.config["FLASK_PORT"],
     debug=bool(int(app.config["FLASK_DEBUG"])),
-    threaded=True,
+    threaded=True
   )
