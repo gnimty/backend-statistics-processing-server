@@ -32,6 +32,10 @@ class Mongo:
 
   @classmethod
   def init_index(cls, db) -> None:
+    summoners_index_by_summoner_id = IndexModel([
+        ("id", ASCENDING)
+    ], name="summoners_index_by_summoner_id")  
+      
     summoners_index_by_mmr = IndexModel([
         ("mmr", DESCENDING)
     ], name="summoners_index_by_mmr")
@@ -61,6 +65,18 @@ class Mongo:
         ("totalPlays", DESCENDING),
         ("championId", ASCENDING),
     ], name="summoner_plays_index")
+    
+    summoner_plays_flex_index = IndexModel([
+        ("puuid", ASCENDING),
+        ("totalPlays", DESCENDING),
+        ("championId", ASCENDING),
+    ], name="summoner_plays_flex_index")
+    
+    summoner_plays_total_index = IndexModel([
+        ("puuid", ASCENDING),
+        ("totalPlays", DESCENDING),
+        ("championId", ASCENDING),
+    ], name="summoner_plays_total_index")
 
     matches_index = IndexModel([
         ("matchId", DESCENDING),
@@ -105,7 +121,7 @@ class Mongo:
         ("order",ASCENDING)
     ], name = "version_index")
     
-    db.summoners.create_indexes([summoners_index_by_mmr, summoners_index_by_mmr_flex, summoners_index_by_internal_tagname])
+    db.summoners.create_indexes([summoners_index_by_mmr, summoners_index_by_mmr_flex, summoners_index_by_internal_tagname, summoners_index_by_summoner_id])
     db.summoner_history.create_indexes([summoner_history_index])
     db.summoner_history_flex.create_indexes([summoner_history_flex_index])
     db.summoner_matches.create_indexes([summoner_matches_index])
@@ -116,5 +132,7 @@ class Mongo:
     db.champion_statistics.create_indexes([champion_statistics_index])
     db.teams.create_indexes([teams_index])
     db.summoner_plays.create_indexes([summoner_plays_index])
+    db.summoner_plays_flex.create_indexes([summoner_plays_flex_index])
+    db.summoner_plays_total.create_indexes([summoner_plays_total_index])
     db.raw.create_indexes([raw_index])
     db.version.create_indexes([version_index])

@@ -20,6 +20,11 @@ logger = get_logger()
 col = "matches"
 db = Mongo.get_client("riot")
 
+def clear():
+  db[col].delete_many({})
+  db["participants"].delete_many({})
+  db["teams"].delete_many({})
+
 def delete_participant(match_id, participant_id):
   db["participants"].delete_one({"matchId":match_id, "participantId":participant_id})
 
@@ -320,8 +325,9 @@ def update_matches_by_puuid(puuid, collect = False):
   
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
   if not collect:
-    summoner_plays.update_by_puuid(puuid)
-    summoner_plays.update_by_puuid(puuid, queueId=440)
+    summoner_plays.update_by_puuid(puuid, None)
+    summoner_plays.update_by_puuid(puuid, 420)
+    summoner_plays.update_by_puuid(puuid, 440)
     summoner.update_summary(puuid)
     
     target_summoner = summoner.find_by_puuid(puuid)

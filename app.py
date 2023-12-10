@@ -2,7 +2,6 @@ import os
 import asyncio
 import requests, datetime
 import psutil
-
 from scheduler import start_schedule  # 스케줄러 로드
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
@@ -151,19 +150,46 @@ def generate_crawl_data():
     "message":"챔피언 맵 정보 생성 완료"
   }
 
+
+## Warning!!!!! ##
 @app.route("/season/date", methods = ["PATCH"])
 def update_season_starts():
   data = request.get_json()
   
   try:
-    startAt = data["startsAt"]
-    epoch_seconds = int(datetime.datetime.strptime(startAt, "%Y%m%d%H%M%S").timestamp())
-    season.update_season(epoch_seconds)
+    # TODO 나중에 안전장치 다시 만들기
+    key = data["key"]
     
+    if not key or key!="rlathfals12#":
+      raise Exception()
+    
+    startAt = datetime.datetime.strptime(data["startAt"], "%Y%m%d%H%M%S")
+    seasonName = data["seasonName"]
+    
+    is_changed = season.update_season(startAt, seasonName)
+    
+    if is_changed:
+      match.clear()
+      
   except Exception:
     return {
-        "message":"잘못된 날짜 정보입니다."
+        "message":"시즌 정보 업데이트에 실패했습니다."
       }
+  
+  # try:
+  #   startAt = data["startAt"]
+  #   # season = data["season"]
+  #   seasonName = data["seasonName"]
+  #   season.update_season(startAt, seasonName)
+    
+  # except Exception:
+  #   return {
+  #       "message":"잘못된 날짜 정보입니다."
+  #     }
+    
+  return {
+    "message":"시즌 정보 갱신 완료"
+  }
 
 @app.route("/flush")
 def flsuh_raw_datas():

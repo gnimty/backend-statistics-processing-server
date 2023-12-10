@@ -2,7 +2,6 @@ from riot_requests import summoner_v4, league_exp_v4
 from datetime import datetime
 from utils.summoner_name import *
 from modules.tier_division_mmr import MMR
-from modules.summoner_plays import find_most_champions
 from config.mongo import Mongo
 import asyncio
 from community import csmq
@@ -299,7 +298,63 @@ def find_most_lane(puuid, queueId=420):
   
   return [r["lane"] for r in aggregated][:3]
 
-
+def find_most_champions(puuid, queueId=420):
+  pipeline_lane = [
+    {"$match":{
+      "puuid":puuid,
+      "queueId":queueId,
+    }},
+    {"$sort": {"matchId": -1}},
+    {"$limit": 20},
+    {"$group":{
+      "_id":"$championId",
+      "plays":{"$sum":1}
+    }},
+    {"$sort": {
+      "plays": -1
+    }},
+    {"$project":{
+      "championId":"$_id",
+      "_id":0
+    }}
+  ]
+  
+  aggregated = list(db_riot["participants"].aggregate(pipeline_lane))
+  
+  return [r["championId"] for r in aggregated][:3]
+  
+  # target_col = col
+  # if queueId== 440:
+  #   target_col = "summoner_plays_flex"
+  # pipeline_champion =  [
+  #   {
+  #     "$match":{
+  #       "puuid":puuid,
+  #       "season":season_name
+  #     }
+  #   },
+  #   {
+  #     "$sort":{
+  #       "totalPlays": -1  
+  #     }
+  #   },
+  #   {
+  #     "$limit":3
+  #   },
+  #   {
+  #     "$project":{
+  #       "_id":0,
+  #       "championId":1   
+  #     }
+  #   }
+  # ]
+  
+  
+  # aggregated = list(db[target_col].aggregate(pipeline_champion))
+  
+  # result  = [r["championId"] for r in aggregated]
+  
+  # return result       
 
 # def moveHistoryFields(db):
 #   summoners = list(db[col].find({}))

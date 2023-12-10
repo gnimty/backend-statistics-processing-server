@@ -1,17 +1,31 @@
 from error.custom_exception import *
 from config.mongo import Mongo
+from modules.season import season_name
+
 
 col = "summoner_plays"
 db = Mongo.get_client("riot")
 
-def update_by_puuid(puuid, queueId = 420):
+def update_by_puuid(puuid, queueId):
+  match_cond = {
+    'puuid': puuid,
+  }
+  if queueId==None:
+    target_col = "summoner_plays_total"
+    match_cond['queueId'] = {'$in': [420, 440]}
+  elif queueId == 420:
+    match_cond['queueId'] = queueId
+    target_col = col
+  elif queueId == 440:
+    match_cond['queueId'] = queueId
+    target_col = "summoner_plays_flex"
+  else:
+    return None
+  
   pipeline = [
     # puuid와 일치하는 participants 정보 가져오기
     {
-      '$match':{
-        'puuid': puuid,
-        'queueId': queueId
-      }
+      '$match':match_cond
     },
     # championId별로 그룹핑
     {
@@ -86,7 +100,6 @@ def update_by_puuid(puuid, queueId = 420):
     }
   ]
   
-  
   # 1. summoner가 play한 participant 정보를 전부 aggregation load
   aggregate_result = list(db["participants"].aggregate(pipeline))
   
@@ -95,45 +108,14 @@ def update_by_puuid(puuid, queueId = 420):
   
   # 2. 이 정보를 summoner_plays collection에 update
   for result in aggregate_result:
-    db[col].update_one(
+    db[target_col].update_one(
       {
         "puuid": puuid,
         "championId":result["championId"],
-        "queueId":queueId
+        "season": season_name
       },
       {
         "$set": result
       },
       True
-    )
-  
-def find_most_champions(puuid, queueId=420):
-  pipeline_champion =  [
-    {
-      "$match":{
-        "puuid":puuid,
-        "queueId":queueId
-      }
-    },
-    {
-      "$sort":{
-        "totalPlays": -1  
-      }
-    },
-    {
-      "$limit":3
-    },
-    {
-      "$project":{
-        "_id":0,
-        "championId":1   
-      }
-    }
-  ]
-  
-  
-  aggregated = list(db[col].aggregate(pipeline_champion))
-  
-  result  = [r["championId"] for r in aggregated]
-  
-  return result                    
+    )             
