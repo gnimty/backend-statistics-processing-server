@@ -301,6 +301,7 @@ def update_match(match_id):
   else:
     avg_tier = MMR.mmr_to_tier(sum(summoner_tiers)/len(summoner_tiers))
   
+  match["avg_tier"] = avg_tier
   db["matches"].insert_one(match)
   db["teams"].insert_many(info_teams)
   db["participants"].insert_many(info_participants)
