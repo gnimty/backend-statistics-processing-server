@@ -256,9 +256,12 @@ def remove_duplicates():
   
 @app.route("/test")
 def test():
+  alive = CustomMatchThreadTask.alive_thread_len()
+  
   return {
     "message":f"{CustomMatchThreadTask.await_match_ids_len()}개 match id 대기 중",
-    "aliveThreads":f"{CustomMatchThreadTask.alive_thread_len()}개"
+    "thread_1":f"{alive[0]}개",
+    "thread_2":f"{alive[1]}개"
   }
 
 @app.route("/index")

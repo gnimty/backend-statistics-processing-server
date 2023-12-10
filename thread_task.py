@@ -30,8 +30,16 @@ class CustomMatchThreadTask():
   
   @classmethod
   def alive_thread_len(cls):
-    return len(cls.threads)
-  
+    alive = [0, 0]
+    
+    for thread in cls.threads:
+      if thread.is_alive():
+        if thread.name == "thread_1":
+          alive[0]+=1
+        else:
+          alive[1]+=1
+          
+    return alive
 
   # 1번 쓰레드 작업 : puuid 리스트를 받아 해당 puuid별로 summoner_match 최신 값들을 받아서 queue에 삽입
   @classmethod
@@ -39,7 +47,7 @@ class CustomMatchThreadTask():
     for puuid in puuids:
       try:
         match_ids = summoner_matches.update_total_match_ids(puuid, collect=True)
-      raise Exception as e:
+      except Exception as e:
         logger.info("puuid = %s match id 수집 실패", puuid)
         continue
       for match_id in match_ids:
@@ -89,12 +97,12 @@ class CustomMatchThreadTask():
     for i in range(3):
       target_puuids = list(puuids[i:i+interval])
       
-      t1 = threading.Thread(target = cls.thread_1, args = (target_puuids,))
+      t1 = threading.Thread(target = cls.thread_1, args = (target_puuids,), name = "thread_1")
       
       cls.threads.append(t1)
     
     for i in range(50):
-      t2 = threading.Thread(target=cls.thread_2 )
+      t2 = threading.Thread(target=cls.thread_2 , name = "thread_2")
       
       cls.threads.append(t2)
 
