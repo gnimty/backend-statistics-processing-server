@@ -37,8 +37,11 @@ class CustomMatchThreadTask():
   @classmethod
   def thread_1(cls, puuids):
     for puuid in puuids:
-      match_ids = summoner_matches.update_total_match_ids(puuid, collect=True)
-      
+      try:
+        match_ids = summoner_matches.update_total_match_ids(puuid, collect=True)
+      raise Exception as e:
+        logger.info("puuid = %s match id 수집 실패", puuid)
+        
       for match_id in match_ids:
         if cls.match_ids_queue.qsize() >= 1000:
           logger.info("저장된 match id가 너무 많습니다. 10초간 유휴")
