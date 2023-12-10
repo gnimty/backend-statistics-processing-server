@@ -84,7 +84,7 @@ class CustomMatchThreadTask():
     # 모든 puuid를 탐색하면서 해당 소환사가 진행한 모든 전적 정보 업데이트
     # 10개 구간으로 나누어 진행
     
-    interval = len(puuids)//10
+    interval = len(puuids)//3
     
     for i in range(3):
       target_puuids = list(puuids[i:i+interval])
