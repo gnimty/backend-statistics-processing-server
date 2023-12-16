@@ -36,7 +36,7 @@ def task_over_master(league, queue, collect):
 
 
 # collect = True 시 소환사 업데이트 정보를 csmq로 보내지 않음
-def update_all_summoners(reverse=False, collect=False):
+def update_all_summoners(collect=False):
   global in_task
 
   if in_task:

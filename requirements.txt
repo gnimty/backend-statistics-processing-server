@@ -17,3 +17,4 @@ pandas
 fastparquet
 pyarrow
 psutil
+httpx

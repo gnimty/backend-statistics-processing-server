@@ -20,6 +20,8 @@ class Config:
   REDIS_HOST = os.environ.get("REDIS_HOST")
   REDIS_PORT = os.environ.get("REDIS_PORT")
   
+  PROCESS = os.environ.get("PROCESS")
+  
   BATCH_LIMIT = int(os.environ.get("BATCH_LIMIT"))
   API_REQUEST_LIMIT = int(os.environ.get("API_REQUEST_LIMIT"))
   

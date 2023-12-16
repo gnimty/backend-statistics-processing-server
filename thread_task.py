@@ -9,7 +9,6 @@ from error.custom_exception import AlreadyInTask
 
 logger = get_logger()
 
-
 class CustomMatchThreadTask():
   in_task = False
   
@@ -19,7 +18,6 @@ class CustomMatchThreadTask():
 
   # Locks
   set_lock = threading.Lock()
-  queue_lock = threading.Lock()
   
   # 쓰레드 생성
   threads = []
@@ -53,39 +51,42 @@ class CustomMatchThreadTask():
       for match_id in match_ids:
         if cls.match_ids_queue.qsize() >= 1000:
           logger.info("저장된 match id가 너무 많습니다. 10초간 유휴")
-          time.sleep(10)
+          time.sleep(5)
         with cls.set_lock:
           if match_id not in cls.match_ids_set:
             cls.match_ids_set.add(match_id)
-            with cls.queue_lock:
-              cls.match_ids_queue.put(match_id)
+            cls.match_ids_queue.put(match_id)
 
   # 2번 쓰레드 작업 : queue에서 match_id를 하나씩 가져와서 전적정보 갱신
   @classmethod
   def thread_2(cls):
-    time.sleep(10)  # 1번 쓰레드 작업 시작 후 10초 대기
     
     while True:
-      if cls.match_ids_queue.empty():
-        time.sleep(5)
-        continue
-      with cls.queue_lock:
-        match_id = cls.match_ids_queue.get()
+        try:
+            match_id = cls.match_ids_queue.get(timeout=10)
+        except queue.Empty as e:
+            logger.info("match id queue가 비어 있으므로 종료합니다.")
+            break
         
-      try:
-      # 2번 쓰레드 작업 수행
-        match.update_match(match_id)
-      except Exception as e:
-        logger.info("match id = %s에 해당하는 전적 정보 업데이트를 실패했습니다.")
+        try:
+        # 2번 쓰레드 작업 수행
+            match.update_match(match_id)
+        except Exception as e:
+            logger.info("match id = %s에 해당하는 전적 정보 업데이트를 실패했습니다.")
 
   @classmethod
-  def start(cls):
+  def start(cls, skip = False):
     if cls.in_task:
       raise AlreadyInTask("이미 소환사 전적 정보를 수집 중입니다.")
     
     cls.in_task = True
     puuids = summoner.find_all_puuids()
-  
+    
+    if skip:
+        puuids = puuids[len(puuids)//2:]
+    else:
+        puuids = puuids[:len(puuids)//2]
+    
     # 균일한 티어대 정보 수집을 위하여 shuffle
     random.shuffle(puuids)
     
@@ -100,19 +101,19 @@ class CustomMatchThreadTask():
       t1 = threading.Thread(target = cls.thread_1, args = (target_puuids,), name = "thread_1")
       
       cls.threads.append(t1)
+      t1.start()
     
-    for i in range(50):
+    time.sleep(2)
+    
+    for i in range(20):
       t2 = threading.Thread(target=cls.thread_2 , name = "thread_2")
       
       cls.threads.append(t2)
-
-    # 쓰레드 시작
-    for thread in cls.threads:
-      thread.start()
+      t2.start()
 
     # 모든 쓰레드 종료 대기
     for thread in cls.threads:
       thread.join()
 
-  
+    del cls.threads[:]
     cls.in_task = False

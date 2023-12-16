@@ -9,7 +9,46 @@ services:
     #   dockerfile: Dockerfile # dockerfile : 도커파일 경로
     restart: unless-stopped
     ports:
-      - ${FLASK_RUN_PORT}:5000
+      - ${MASTER_FLASK_RUN_PORT}:5000
+    depends_on:
+      - mongodb
+      - redis
+      - selenium
+      - slave-summoner-server
+      - slave-match-server
+      - slave-match-server-2
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+      - PROCESS=master
+    volumes:  
+      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+      # - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+  slave-summoner-server:
+    image: solmin2/statistics-processing-server:latest
+    container_name: slave-summoner-server
+    restart: unless-stopped
+    ports:
+      - ${SLAVE_SUMMONER_FLASK_RUN_PORT}:5000
+    depends_on:
+      - mongodb
+      - redis
+      - selenium
+      - slave-match-server
+      - slave-match-server-2
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+      - PROCESS=slave_summoner
+
+  slave-match-server:
+    image: solmin2/statistics-processing-server:latest
+    container_name: slave-match-server
+    restart: unless-stopped
+    ports:
+      - ${SLAVE_MATCH_FLASK_RUN_PORT}:5000
     depends_on:
       - mongodb
       - redis
@@ -18,9 +57,24 @@ services:
       - .env
     environment:
       - TZ=Asia/Seoul
-    volumes:  
-      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
-      # - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+      - PROCESS=slave_match
+
+  slave-match-server-2:
+    image: solmin2/statistics-processing-server:latest
+    container_name: slave-match-server-2
+    restart: unless-stopped
+    ports:
+      - ${SLAVE_MATCH_2_FLASK_RUN_PORT}:5000
+    depends_on:
+      - mongodb
+      - redis
+      - selenium
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+      - PROCESS=slave_match
+
   # 몽고DB
   mongodb:
     image: mongo:6.0.4
