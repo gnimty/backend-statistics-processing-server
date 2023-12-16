@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint
 from utils.summoner_name import *
 from modules import summoner, league_entries, match, version, crawl
 from riot_requests import summoner_v4

@@ -42,6 +42,8 @@ services:
     environment:
       - TZ=Asia/Seoul
       - PROCESS=slave_summoner
+    volumes:  
+      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
 
   slave-match-server:
     image: solmin2/statistics-processing-server:latest
@@ -58,6 +60,8 @@ services:
     environment:
       - TZ=Asia/Seoul
       - PROCESS=slave_match
+    volumes:  
+      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
 
   slave-match-server-2:
     image: solmin2/statistics-processing-server:latest
@@ -74,6 +78,8 @@ services:
     environment:
       - TZ=Asia/Seoul
       - PROCESS=slave_match
+    volumes:  
+      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
 
   # 몽고DB
   mongodb:
