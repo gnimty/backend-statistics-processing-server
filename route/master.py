@@ -1,13 +1,13 @@
-from flask import Blueprint
+from flask import Blueprint, request
 from utils.summoner_name import *
-from modules import summoner, league_entries, match, version, crawl
+from modules import summoner, league_entries, match, version, crawl, season
 from riot_requests import summoner_v4
 from error.custom_exception import *  # custom 예외
 import asyncio
 from community import csmq
 from modules.raw_match import RawMatch
 import requests
-
+import datetime
 from config.appconfig import current_config as config
 
 master_route = Blueprint('master_route', __name__)
@@ -68,7 +68,7 @@ def refresh_summoner(puuid):
 
 @master_route.route("/flush")
 def flsuh_raw_datas():
-  RawMatch.raw_to_parquet_and_upload(scale=10000)
+  RawMatch.raw_to_parquet_and_upload(scale=100000)
   
   return {
     "message":"raw data 전송 완료"
@@ -93,8 +93,110 @@ def generate_crawl_data():
   return {
     "message":"챔피언 맵 정보 생성 완료"
   }
+    
+@master_route.route("/refresh/match/<match_id>", methods=["POST"])
+def refresh_match(match_id):
+  match.delete_match(match_id)
+  
+  match.update_match(match_id)
+  
+  return {
+    "message":"매치 정보 갱신 완료"
+  }
+
+## Warning!!!!! 시즌 정보 프동기화 필요 ##
+@master_route.route("/season/date", methods = ["PATCH"])
+def update_season_starts():
+  data = request.get_json()
+  
+  try:
+    # TODO 나중에 안전장치 다시 만들기
+    key = data["key"]
+    
+    if not key or key!="rlathfals12#":
+      raise Exception()
+    
+    startAt = datetime.datetime.strptime(data["startAt"], "%Y%m%d%H%M%S")
+    seasonName = data["seasonName"]
+    
+    is_changed = season.update_season(startAt, seasonName)
+    
+    if is_changed:
+      match.clear()
+      
+  except Exception:
+    return {
+        "message":"시즌 정보 업데이트에 실패했습니다."
+      }
+  
+  # try:
+  #   startAt = data["startAt"]
+  #   # season = data["season"]
+  #   seasonName = data["seasonName"]
+  #   season.update_season(startAt, seasonName)
+    
+  # except Exception:
+  #   return {
+  #       "message":"잘못된 날짜 정보입니다."
+  #     }
+    
+  return {
+    "message":"시즌 정보 갱신 완료"
+  }
+
+@master_route.route("/remove/duplicates")
+def remove_duplicates():
+  results = list(summoner.get_duplicates())
+  for result in results:
+    puuid = result["_id"]
+    limit = int(result["count"]) - 1 
+    for _ in range(limit):
+      summoner.delete_one_by_puuid(puuid)
+      
+    logger.info("puuid = %s 중복 제거", puuid)
+  
+  
+  results = list(match.get_duplicates())
+  
+  for result in results:
+    match_id = result["_id"]
+    limit = int(result["count"]) -1 
+    for _ in range(limit):
+      match.delete_one_by_match_id(match_id)
+      
+    logger.info("match id = %s 중복 제거", match_id)
+  
+  results = list(match.get_duplicates_team())
+  
+  for result in results:
+    match_id = result["_id"]["matchId"]
+    team_id = result["_id"]["teamId"]
+    limit = int(result["count"]) - 1 
+    for _ in range(limit):
+      match.delete_team(match_id, team_id)
+    logger.info("match id = %s, team id = %s 중복 제거", match_id, team_id)
+    logger.info("")
+
+  
+  results = list(match.get_duplicates_participant())
+  
+  for result in results:
+    match_id = result["_id"]["matchId"]
+    participant_id = result["_id"]["participantId"]
+    limit = int(result["count"]) - 1 
+    for _ in range(limit):
+      match.delete_participant(match_id, participant_id)
+    logger.info("match id = %s, participant id = %s 중복 제거", match_id, participant_id)
+  
+  return {
+    "message":"success"
+  }
+
+
 
 ## 비동기 request를 통해 slave process API 요청
+
+
 
 
 schedule = [

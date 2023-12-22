@@ -32,6 +32,7 @@ def delete_team(match_id, team_id):
   db["teams"].delete_one({"matchId":match_id, "teamId":team_id})
 
 def delete_one_by_match_id(match_id):
+  
   db[col].delete_one({"matchId":match_id})
 
 def get_duplicates():
@@ -84,6 +85,12 @@ def get_duplicates_team():
 
 def delete_match(match_id):
   db[col].delete_many({"matchId":match_id})
+  db["raw"].delete_many({"metadata.matchId":match_id})
+  db["participants"].delete_many({"matchId":match_id})
+  db["teams"].delete_many({"matchId":match_id})
+  
+def get_raw(match_id):
+  return db["raw"].find_one({"metadata.matchId":match_id}, {"_id":0})
 
 def update_match(match_id):
   """
@@ -153,11 +160,12 @@ def update_match(match_id):
       "teamId":team["teamId"],
       "win":team["win"],
       "bans":team["bans"],
-      "baron":team["objectives"]["baron"]["kills"],
-      "dragon":team["objectives"]["dragon"]["kills"],
-      "tower":team["objectives"]["tower"]["kills"],
-      "riftHerald":team["objectives"]["riftHerald"]["kills"],
-      "totalKills":team["objectives"]["champion"]["kills"],
+      "objectives":team["objectives"],
+      # "baron":team["objectives"]["baron"]["kills"],
+      # "dragon":team["objectives"]["dragon"]["kills"],
+      # "tower":team["objectives"]["tower"]["kills"],
+      # "riftHerald":team["objectives"]["riftHerald"]["kills"],
+      # "totalKills":team["objectives"]["champion"]["kills"],
     })
   
   if info_teams[0]["win"]==True:
@@ -180,7 +188,7 @@ def update_match(match_id):
     # 킬관여율 필드 : info["teams"]에서 teamId가 일치하는거 찾고 거기서 totalKill 가져오기
     # challenges에 killParticipations 필드가 존재하지 않는다면 직접 계산 후 소수 2번째 자리까지 반올림
     teamId = participant["teamId"]
-    total_team_kills = int(list(filter(lambda x: x["teamId"]==teamId, info_teams))[0]["totalKills"])
+    total_team_kills = int(list(filter(lambda x: x["teamId"]==teamId, info_teams))[0]["objectives"]["champion"]["kills"])
     killParticipation = challenges.get("killParticipation")
     if not killParticipation:
       if total_team_kills==0:
@@ -308,7 +316,7 @@ def update_match(match_id):
   
   
   if match["queueId"]!=430: # 빠른 대전 게임을 제외한 3개의 게임 모드는 raw data로 넘어감
-    raw = RawMatch(match_id, avg_tier, info, info_timelines)
+    raw = RawMatch(match_id, avg_tier, info, result_timeline, info_timelines)
     db["raw"].insert_one(raw.__dict__)
 
 def collect_matches_by_puuids(puuids):
