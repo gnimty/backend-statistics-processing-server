@@ -51,13 +51,13 @@ elif process=="slave_summoner":
   from route import slave_summoner
   app.register_blueprint(slave_summoner.slave_summoner_route)
   
-  Thread(target = slave_summoner.collect_summoners, name="main").start()
+  # Thread(target = slave_summoner.collect_summoners, name="main").start()
   
 elif process=="slave_match" or process=="slave_match_2":
   from route import slave_match
   app.register_blueprint(slave_match.slave_match_route)
   
-  Thread(target = slave_match.collect_match, name="main").start()
+  # Thread(target = slave_match.collect_match, name="main").start()
 
 
 if __name__ == "__main__":
