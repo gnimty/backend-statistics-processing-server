@@ -15,7 +15,7 @@ master_route = Blueprint('master_route', __name__)
 # 해당 tagName(gameName + tagLine)이 일치하는 소환사 정보 검색 또는 갱신
 @master_route.route("/lookup/summoner/<game_name>/<tag_line>", methods=["POST"])
 def lookup_summoner(game_name, tag_line):
-  internal_tagname = f"{make_internal_name(game_name)} + {make_tagname(tag_line)}"
+  internal_tagname = f"{make_internal_name(game_name)}#{make_tagname(tag_line)}"
   
   found = summoner.find_one_by_internal_tagname(internal_tagname)
   
