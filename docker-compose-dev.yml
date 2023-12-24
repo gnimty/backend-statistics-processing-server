@@ -25,6 +25,7 @@ services:
       - FLASK_RUN_PORT=${MASTER_FLASK_RUN_PORT}
     volumes:  
       - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+      - ./raw:/app/raw
       # - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
   slave-summoner-server:
     image: solmin2/statistics-processing-server:latest

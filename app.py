@@ -63,7 +63,7 @@ elif process=="slave_match" or process=="slave_match_2":
 if __name__ == "__main__":
   app.run(
     host = app.config["FLASK_HOST"], 
-    port=app.config["FLASK_PORT"],
+    port=5000,
     debug=bool(int(app.config["FLASK_DEBUG"])),
     threaded=True
   )
