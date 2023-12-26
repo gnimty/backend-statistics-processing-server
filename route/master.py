@@ -68,7 +68,7 @@ def refresh_summoner(puuid):
 
 @master_route.route("/flush")
 def flsuh_raw_datas():
-  RawMatch.raw_to_parquet_and_upload(scale=30000)
+  RawMatch.raw_to_parquet_and_upload(scale=10000)
   
   return {
     "message":"raw data 전송 완료"
