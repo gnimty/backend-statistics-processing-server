@@ -63,14 +63,13 @@ class CustomMatchThreadTask():
     
     while True:
         try:
-            match_id = cls.match_ids_queue.get(timeout=10)
-        except queue.Empty as e:
-            logger.info("match id queue가 비어 있으므로 종료합니다.")
-            break
-        
-        try:
-        # 2번 쓰레드 작업 수행
+            match_id = cls.match_ids_queue.get(block=False)
+            # 2번 쓰레드 작업 수행
             match.update_match(match_id)
+        except queue.Empty as e:
+            logger.info("match id queue가 비어 있으므로 10초 동안 유휴합니다.")
+            time.sleep(10)
+            continue
         except Exception as e:
             logger.info("match id = %s에 해당하는 전적 정보 업데이트를 실패했습니다.")
 
