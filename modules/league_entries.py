@@ -44,7 +44,7 @@ def update_all_summoners(collect=False):
 
   in_task = True
 
-  queues = ["RANKED_SOLO_5x5", "RANKED_FLEX_SR"]
+  queues = ["RANKED_FLEX_SR", "RANKED_SOLO_5x5",]
 
   for queue in queues:
     leagues = ["challengerleagues", "grandmasterleagues", "masterleagues"]
