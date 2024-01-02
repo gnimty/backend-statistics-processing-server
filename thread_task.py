@@ -94,8 +94,8 @@ class CustomMatchThreadTask():
     
     interval = len(puuids)//3
     
-    for i in range(3):
-      target_puuids = list(puuids[i:i+interval])
+    for i in range(4):
+      target_puuids = list(puuids[i*interval:(i+1)*interval])
       
       t1 = threading.Thread(target = cls.thread_1, args = (target_puuids,), name = "thread_1")
       

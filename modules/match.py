@@ -9,6 +9,7 @@ from community import csmq
 from modules.tier_division_mmr import MMR
 from modules.raw_match import RawMatch
 from config.redis import Redis
+import threading
 
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
@@ -326,22 +327,41 @@ def update_match(match_id, collect=False):
     raw = RawMatch(match_id, avg_tier, info, result_timeline, info_timelines)
     db["raw"].insert_one(raw.__dict__)
 
+
+def update_matches_by_match_ids(match_ids):
+  for match_id in match_ids:
+      try:
+        update_match(match_id)
+      except Exception:
+        logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
     
 def collect_matches_by_puuids(puuids):
   for puuid in puuids:
     update_matches_by_puuid(puuid, collect=True)
 
+
+
 def update_matches_by_puuid(puuid, collect = False):
   match_ids = summoner_matches.update_total_match_ids(puuid, collect=collect)
   
-  for match_id in match_ids:
-    try:
-      update_match(match_id)
-    except Exception:
-      logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
-  
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
-  if not collect:
+  if not collect: # 유저의 요청에 의한 매치정보 갱신일 경우 thread로 동작
+    # 1. match_ids 를 10개의 구간으로 나누기
+    interval = len(match_ids)//9
+    
+    # 2. 10개의 thread가 각 match ids들을 돌면서 update
+    threads = []
+    for i in range(10):
+      target_match_ids = match_ids[i*interval:(i+1)*interval]
+  
+      t1 = threading.Thread(target = update_matches_by_match_ids, args = (target_match_ids,))
+      threads.append(t1)
+      t1.start()
+
+    # 모든 쓰레드 종료 대기
+    for thread in threads:
+      thread.join()
+    
     summoner_plays.update_by_puuid(puuid, None)
     summoner_plays.update_by_puuid(puuid, 420)
     summoner_plays.update_by_puuid(puuid, 440)
@@ -349,6 +369,8 @@ def update_matches_by_puuid(puuid, collect = False):
     
     target_summoner = summoner.find_by_puuid(puuid)
     asyncio.run(csmq.add_summoner(target_summoner))
+  else:
+    update_matches_by_match_ids(match_ids)
   
 def short_game_version(version):
   split = version.split(".")[:3]
