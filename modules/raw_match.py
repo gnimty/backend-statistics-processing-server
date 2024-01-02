@@ -8,6 +8,8 @@ import os
 import log
 import pyarrow as pa
 import pyarrow.parquet as pq
+import threading
+
 
 logger = log.get_logger()  # 로거
 
@@ -15,6 +17,11 @@ def game_version_to_api_version(version):
   return version[:-1]+"1"
 
 class RawMatch():
+  
+  # 공유 자원
+  match_ids_set = set()
+  # Locks
+  set_lock = threading.Lock()
   
   db = Mongo.get_client("riot")
   raw_col = db["raw"]

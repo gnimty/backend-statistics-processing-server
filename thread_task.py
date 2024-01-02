@@ -3,9 +3,10 @@ import queue
 import time
 import random
 
-from modules import match, summoner_matches, summoner
+from modules import match, summoner_matches, summoner, raw_match
 from log import get_logger
 from error.custom_exception import AlreadyInTask
+from config.redis import Redis
 
 logger = get_logger()
 
@@ -13,11 +14,10 @@ class CustomMatchThreadTask():
   in_task = False
   
   # 공유 자원
-  match_ids_set = set()
   match_ids_queue = queue.Queue()
 
-  # Locks
-  set_lock = threading.Lock()
+  # set_lock = raw_match.RawMatch.set_lock
+  # match_id_set = raw_match.RawMatch.match_ids_set
   
   # 쓰레드 생성
   threads = []
@@ -52,10 +52,10 @@ class CustomMatchThreadTask():
         if cls.match_ids_queue.qsize() >= 1000:
           logger.info("저장된 match id가 너무 많습니다. 10초간 유휴")
           time.sleep(5)
-        with cls.set_lock:
-          if match_id not in cls.match_ids_set:
-            cls.match_ids_set.add(match_id)
-            cls.match_ids_queue.put(match_id)
+        
+        if not Redis.check_processed(match_id):
+          Redis.add_to_set(match_id)
+          cls.match_ids_queue.put(match_id)
 
   # 2번 쓰레드 작업 : queue에서 match_id를 하나씩 가져와서 전적정보 갱신
   @classmethod
@@ -65,7 +65,7 @@ class CustomMatchThreadTask():
         try:
             match_id = cls.match_ids_queue.get(block=False)
             # 2번 쓰레드 작업 수행
-            match.update_match(match_id)
+            match.update_match(match_id, collect=True)
         except queue.Empty as e:
             logger.info("match id queue가 비어 있으므로 10초 동안 유휴합니다.")
             time.sleep(10)

@@ -8,7 +8,7 @@ import asyncio
 from community import csmq
 from modules.tier_division_mmr import MMR
 from modules.raw_match import RawMatch
-
+from config.redis import Redis
 
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
@@ -92,7 +92,7 @@ def delete_match(match_id):
 def get_raw(match_id):
   return db["raw"].find_one({"metadata.matchId":match_id}, {"_id":0})
 
-def update_match(match_id):
+def update_match(match_id, collect=False):
   """
   특정 matchId로 match, teams, participants 업데이트 후 결과 반환
 
@@ -310,15 +310,23 @@ def update_match(match_id):
     avg_tier = MMR.mmr_to_tier(sum(summoner_tiers)/len(summoner_tiers))
   
   match["avg_tier"] = avg_tier
-  db["matches"].insert_one(match)
-  db["teams"].insert_many(info_teams)
-  db["participants"].insert_many(info_participants)
   
-  
+  if not collect: # 유저의 직접 갱신 요청의 경우에만 db에 저장
+    db["matches"].insert_one(match)
+    db["teams"].insert_many(info_teams)
+    db["participants"].insert_many(info_participants)
+    
   if match["queueId"]!=430: # 빠른 대전 게임을 제외한 3개의 게임 모드는 raw data로 넘어감
+    if not collect: # 유저 요청에 의한 match 수집이라면 
+      if not Redis.check_processed(match_id): # Redis set에 추가 후 raw 데이터 삽입
+        Redis.add_to_set(match_id)
+      else: # 이미 redis set에 존재한다면 넘기기
+        return
+      
     raw = RawMatch(match_id, avg_tier, info, result_timeline, info_timelines)
     db["raw"].insert_one(raw.__dict__)
 
+    
 def collect_matches_by_puuids(puuids):
   for puuid in puuids:
     update_matches_by_puuid(puuid, collect=True)
