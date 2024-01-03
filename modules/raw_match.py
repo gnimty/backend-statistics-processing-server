@@ -206,8 +206,9 @@ class RawMatch():
       
   @classmethod
   def raw_to_parquet_and_upload(cls, scale:int):
-    current_date = datetime.datetime.now() - datetime.timedelta(days=1)
-    formatted_date = current_date.strftime('%Y-%m-%d')
+    current_date = datetime.datetime.now()
+    std_date = current_date - datetime.timedelta(days=1)
+    formatted_date = std_date.strftime('%Y-%m-%d')
     
     logger.info("현재 시간 : %s", formatted_date)
     
