@@ -21,6 +21,7 @@ class CustomMatchThreadTask():
   
   # 쓰레드 생성
   threads = []
+  thread1_flag  = False
   
   @classmethod
   def await_match_ids_len(cls):
@@ -56,13 +57,15 @@ class CustomMatchThreadTask():
         if not Redis.check_processed(match_id):
           Redis.add_to_set(match_id)
           cls.match_ids_queue.put(match_id)
+    logger.info("thread1 종료")
 
   # 2번 쓰레드 작업 : queue에서 match_id를 하나씩 가져와서 전적정보 갱신
   @classmethod
   def thread_2(cls):
-    
     while True:
         try:
+            if cls.match_ids_queue.empty() and cls.thread1_flag:
+              return
             match_id = cls.match_ids_queue.get(block=False)
             # 2번 쓰레드 작업 수행
             match.update_match(match_id, collect=True)
@@ -94,12 +97,15 @@ class CustomMatchThreadTask():
     
     interval = len(puuids)//3
     
+    thread1_list=[]
+    thread2_list=[]
     for i in range(4):
       target_puuids = list(puuids[i*interval:(i+1)*interval])
       
       t1 = threading.Thread(target = cls.thread_1, args = (target_puuids,), name = "thread_1")
       
       cls.threads.append(t1)
+      thread1_list.append(t1)
       t1.start()
     
     time.sleep(2)
@@ -108,11 +114,19 @@ class CustomMatchThreadTask():
       t2 = threading.Thread(target=cls.thread_2 , name = "thread_2")
       
       cls.threads.append(t2)
+      thread2_list.append(t2)
       t2.start()
 
     # 모든 쓰레드 종료 대기
-    for thread in cls.threads:
+    for thread in thread1_list:
+      thread.join()
+    
+    cls.thread1_flag = True
+    
+    for thread in thread2_list:
       thread.join()
 
     del cls.threads[:]
+    logger.info("모든 쓰레드들을 종료합니다. ")
     cls.in_task = False
+    cls.thread1_flag = False
