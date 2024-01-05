@@ -69,11 +69,12 @@ class RawMatch():
       item_builds = []
       item_starts = []
       item_middle = None
+      item_boots = None
       api_version = game_version_to_api_version(info["gameVersion"])    
       # 1. item 정보를 가져오기 -> 매치되는 버전정보 없으면 가장 최신 버전으로 
       all_items = get_item_maps(api_version)
       
-      total_items, middle_items = all_items["total"], all_items["middle"]
+      total_items, middle_items, boots_items = all_items["total"], all_items["middle"], all_items["boots"]
       
       for field in ["item"+str(i) for i in range(6)]:
         temp = total_items.get(str(participant[field]))
@@ -92,6 +93,8 @@ class RawMatch():
           item_builds.append(int(item))
         if item_middle==None and item in middle_items.keys():
           item_middle = int(item)
+        elif item_boots==None and item in boots_items.keys():
+          item_boots = int(item)
           
       if len(processed_timeline["itemBuild"])!=0:
         item_starts = processed_timeline["itemBuild"][list(sorted(processed_timeline["itemBuild"]))[0]]
@@ -174,6 +177,7 @@ class RawMatch():
           "itemStart": item_starts,
           "itemMiddle": item_middle,
           "itemBuild":item_builds,
+          "itemBoots":item_boots,
           
           ##################### timeline #####################
           "totalDamageDoneToChampions5M" : totalDamageDoneToChampions5M,

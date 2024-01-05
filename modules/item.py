@@ -15,5 +15,6 @@ def get_item_maps(version):
   
   return {
     "total":{r["id"]:r for r in results if r["itemType"]=="total"},
-    "middle":{r["id"]:r for r in results if r["itemType"]=="middle"}
+    "middle":{r["id"]:r for r in results if r["itemType"]=="middle"},
+    "boots":{r["id"]:r for r in results if r["itemType"]=="boots"},
   }

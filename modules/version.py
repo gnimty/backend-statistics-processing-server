@@ -105,6 +105,9 @@ def update_item_info(latest_version):
   for key, value in result["data"].items():
     if int(key)>9999:
       continue
+    if key=="1001":
+      for boots in value["into"]:
+        total_items.append(Item(boots, result["data"][boots].get("name"), latest_version, itemType = "boots"))
     if value["gold"]["total"]<=2000:
       if value["gold"]["total"] >= 700 and value["gold"]["total"] <= 1300 and "Boots" not in value["tags"]:
         total_items.append(Item(key, value.get("name"), latest_version, itemType = "middle"))
