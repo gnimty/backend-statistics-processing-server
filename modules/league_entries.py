@@ -1,42 +1,75 @@
 from riot_requests import league_exp_v4
-from error.custom_exception import DataNotExists, RequestDataNotExists
-from modules import summoner
-from utils.date_calc import lastModifiedFromNow
 import logging
+from modules import summoner
+import threading
+from error.custom_exception import *
 
 logger = logging.getLogger("app")
 
-col = "league_entries"
+in_task = False
 
-def updateAll(db, limit):
-  """리그 엔트리 정보 모두 업데이트
 
-  Args:
-      db (connection)
+def get_summoner_by_id(summoner_id):
+  return league_exp_v4.get_summoner_by_id(summoner_id)
 
-  Raises:
-      RequestDataNotExists: 요청 데이터 정보가 존재하지 않을 때
 
-  Returns:
-      lengthOfEntries(int)
-  """
-  entries = []
-  
-  entries.extend(league_exp_v4.get_specific_league("challengerleagues", limit))
-  entries.extend(league_exp_v4.get_specific_league("grandmasterleagues", limit))
-  entries.extend(league_exp_v4.get_specific_league("masterleagues", limit))
-  
-  rank = 1 # 순위 정보 추가
+def task_under_master(tier, division, queue, collect):
+  page = 1
+  while True:
+    entries = league_exp_v4.get_summoners_under_master(
+        tier, division, queue=queue, page=page)
+
+    if len(entries) == 0:
+      break
+
+    for entry in entries:
+      summoner.update_by_summoner_brief(entry, collect=collect)
+
+    page += 1
+
+
+def task_over_master(league, queue, collect):
+  entries = league_exp_v4.get_top_league(league, queue=queue)
+
   for entry in entries:
-    entry["rank"] = rank
-    summoner.updateBySummonerBrief(db, entry, limit)
-    rank += 1
+    summoner.update_by_summoner_brief(entry, collect=collect)
 
-  if len(entries) == 0:
-    raise RequestDataNotExists("Riot Api 요청 정보가 존재하지 않습니다.")
 
-  # db[col].delete_many({}) # db에 넣기 전 league_entires collection 비우기
-  # db[col].insert_many(entries, ordered=True)
+# collect = True 시 소환사 업데이트 정보를 csmq로 보내지 않음
+def update_all_summoners(collect=False):
+  global in_task
 
-  logger.info("성공적으로 %s명의 엔트리 정보를 업데이트했습니다.", len(entries))
-  return len(entries)
+  if in_task:
+    raise AlreadyInTask("이미 소환사 수집이 진행되고 있습니다.")
+
+  in_task = True
+
+  queues = ["RANKED_FLEX_SR", "RANKED_SOLO_5x5",]
+
+  for queue in queues:
+    leagues = ["challengerleagues", "grandmasterleagues", "masterleagues"]
+
+    tiers = ["DIAMOND", "EMERALD", "PLATINUM",
+             "GOLD", "SILVER", "BRONZE", "IRON"]
+
+    divisions = ["I", "II", "III", "IV"]
+
+    threads = []
+
+    for league in leagues:
+      t = threading.Thread(target=task_over_master,
+                           args=(league, queue, collect))
+      t.start()
+      threads.append(t)
+
+    for tier in tiers:
+      for division in divisions:
+        t = threading.Thread(target=task_under_master,
+                             args=(tier, division, queue, collect))
+        t.start()
+        threads.append(t)
+
+    for thread in threads:
+      thread.join()
+
+  in_task = False

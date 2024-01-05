@@ -1,21 +1,7 @@
-'''
-    dev_error_message : 개발자 에러 메시지
-    error_message : 사용자 에러 메시지
-    
-    class errorClassName(CustomUserError):
-        # parameter 설명
-        # 두 번째 인자 : user error message 세 번째 인자 : dev error message 
-        def __init__(self, error_message, dev_error_message):
-            status_code = 500  # 에러코드
-            if not dev_error_message :
-                dev_error_message = "default error message"
-            super().__init__(status_code, dev_error_message, error_message)
-'''
-
 from flask_request_validator import AbstractRule
-from flask_request_validator.exceptions import RuleError, RequiredJsonKeyError, RequestError
+from flask_request_validator.exceptions import RuleError
 from flask_api import status
-from utils.summoner_name import isValidInternalName, makeInternalName
+from utils.summoner_name import is_valid_internal_name, make_internal_name
 import logging
 
 logger = logging.getLogger("app")
@@ -63,10 +49,16 @@ class SummonerNotExists(CustomUserError):
         self.error_type = "Summoner Not Exist"
         
 class RequestDataNotExists(CustomUserError):
-    def __init__(self, error_message):
+    def __init__(self, error_message = "result data is empty."):
         self.status_code = status.HTTP_404_NOT_FOUND
         self.error_message = error_message
         self.error_type = "Request Data Not Exist"
+        
+class AlreadyInTask(CustomUserError):
+    def __init__(self, error_message):
+        self.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        self.error_message = error_message
+        self.error_type = "Already In Process"
 
 class ValidateStartIdxParam(AbstractRule):
     def validate(self, value):
@@ -92,9 +84,9 @@ class ValidatePageParam(AbstractRule):
 class ValidateInternalNameParam(AbstractRule):
     def validate(self, value):
         # logger.info(value)
-        if not isValidInternalName(value):
+        if not is_valid_internal_name(value):
             raise RuleError('internalName의 형식에 맞게 데이터를 지정하세요.')
-        return makeInternalName(value)
+        return make_internal_name(value)
 
 # class IsStr(AbstractRule):
 #     def validate(self, value):
