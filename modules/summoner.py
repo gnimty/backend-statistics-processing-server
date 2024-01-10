@@ -22,6 +22,27 @@ division = {
   "IV":4
 }
 
+def clear_summoner():
+  update_operation = {"$set": {
+    "tier" : None,
+    "queue" : None,
+    "leaguePoints" : None,
+    "wins" : None,
+    "losses" : None,
+    "mmr" : None,
+    "tier_flex" : None,
+    "queue_flex" : None,
+    "leaguePoints_flex" : None,
+    "wins_flex" : None,
+    "losses_flex" : None,
+    "mmr_flex" : None
+  }}
+  
+  db_riot[col].update_many({}, update_operation)
+  db_riot["summoner_history"].delete_many({})
+  db_riot["summoner_history_flex"].delete_many({})
+  db_riot["summoner_matches"].delete_many({})
+  
 def delete_one_by_puuid(puuid):
   db_riot[col].delete_one({"puuid":puuid})
 
@@ -135,6 +156,9 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False, 
   
   if "rank" in summoner:
     del summoner["rank"] # 랭크 정보 삭제
+    
+  if not summoner_brief:
+    summoner_brief = dict()
   
   if not check_name: # tagLine 갱신을 거치지 않은 데이터일 경우 DB 업데이트에 반영하지 않음
     del summoner["name"]
@@ -149,44 +173,47 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False, 
   for queue in ["RANK_SOLO_5x5", "RANK_FLEX_SR"]:
     suffix= "" if queue=="RANK_SOLO_5x5" else "_flex"
     
-    if summoner_brief.get("tier"+suffix): # 솔로랭크, 자유랭크 정보가 각각 포함되어 있다면
+    # if summoner_brief.get("tier"+suffix): # 솔로랭크, 자유랭크 정보가 각각 포함되어 있다면 => unrank update를 위해 무조건 실행
+    if summoner_brief.get("tier"+suffix)!=None:
       summoner_brief["tier"+suffix] = division[summoner_brief.get("tier"+suffix)]
-      summoner["tier"+suffix] = summoner_brief.get("tier"+suffix)
-      summoner["queue"+suffix] = summoner_brief.get("queue"+suffix).lower()
-      summoner["leaguePoints"+suffix] = summoner_brief.get("leaguePoints"+suffix)
-      summoner["wins"+suffix] = summoner_brief.get("wins"+suffix)
-      summoner["losses"+suffix] = summoner_brief.get("losses"+suffix)
-      summoner["mmr"+suffix] = MMR.rank_to_mmr(summoner.get("queue"+suffix), summoner.get("tier"+suffix), int(summoner.get("leaguePoints"+suffix)))  
-    else:
-      continue
+    summoner["tier"+suffix] = summoner_brief.get("tier"+suffix)
     
-    summoner_history = find_history(summoner["puuid"], queue)
+    summoner["queue"+suffix] = summoner_brief.get("queue"+suffix)
+    if summoner["queue"+suffix]:
+      summoner["queue"+suffix] = summoner["queue"+suffix].lower()
+    summoner["leaguePoints"+suffix] = summoner_brief.get("leaguePoints"+suffix)
+    summoner["wins"+suffix] = summoner_brief.get("wins"+suffix)
+    summoner["losses"+suffix] = summoner_brief.get("losses"+suffix)
+    summoner["mmr"+suffix] = MMR.rank_to_mmr(summoner.get("queue"+suffix), summoner.get("tier"+suffix), int(summoner.get("leaguePoints"+suffix)) if summoner.get("leaguePoints"+suffix) else None)  
     
-    if not summoner_history or not summoner_history.get("history"):
-      summoner_history = {
-          "puuid": summoner["puuid"],
-          "history": [{
-              "queue": summoner_brief["queue"+suffix],
-              "tier":summoner_brief["tier"+suffix],
-              "leaguePoints":summoner_brief["leaguePoints"+suffix],
-              "updatedAt":summoner["updatedAt"]
-          }]
-      }
-    else:
-      # history 맨 처음에 insert
-      summoner_history["history"].insert(0, {
-        "queue":summoner_brief["queue"+suffix],
-        "tier":summoner_brief["tier"+suffix],
-        "leaguePoints":summoner_brief["leaguePoints"+suffix],
-        "updatedAt":summoner["updatedAt"],
-      })
-    
-    target_collection = "summoner_history"+suffix
-    
-    db_riot[target_collection].update_one(
-      {"puuid": summoner["puuid"]},
-      {"$set": summoner_history},
-      True)
+    # summoner_history는 entry정보에 해당 큐 정보가 포함되어 있을 때만 추가 및 갱신
+    if summoner_brief.get("tier"+suffix):
+      summoner_history = find_history(summoner["puuid"], queue)
+      if not summoner_history or not summoner_history.get("history"):
+        summoner_history = {
+            "puuid": summoner["puuid"],
+            "history": [{
+                "queue": summoner_brief.get("queue"+suffix),
+                "tier":summoner_brief.get("tier"+suffix),
+                "leaguePoints":summoner_brief.get("leaguePoints"+suffix),
+                "updatedAt":summoner["updatedAt"]
+            }]
+        }
+      else:
+        # history 맨 처음에 insert
+        summoner_history["history"].insert(0, {
+          "queue":summoner_brief.get("queue"+suffix),
+          "tier":summoner_brief.get("tier"+suffix),
+          "leaguePoints":summoner_brief.get("leaguePoints"+suffix),
+          "updatedAt":summoner["updatedAt"],
+        })
+      
+      target_collection = "summoner_history"+suffix
+      
+      db_riot[target_collection].update_one(
+        {"puuid": summoner["puuid"]},
+        {"$set": summoner_history},
+        True)
     
   if check_refresh:
     summoner["renewableAt"] = datetime.now()

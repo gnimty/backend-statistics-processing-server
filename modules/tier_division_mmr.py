@@ -14,6 +14,9 @@ class MMR(Enum):
     iron = 0
     
     def rank_to_mmr(queue, tier, lp):
+        if queue==None or tier==None or lp==None:
+            return None
+        
         if MMR[queue].value==2800:
             return MMR[queue].value + lp
         else:

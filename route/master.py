@@ -50,9 +50,6 @@ def refresh_summoner(puuid):
   # 이후 해당 소환사의 summonerId로 소환사 랭크 정보 가져오기 -> diamond 이하라면 버리기
   entry = league_entries.get_summoner_by_id(summoner_info["id"])
   
-  if entry == None:
-    raise UserUpdateFailed("유저 전적 업데이트 실패")    
-  
   summoner.update(summoner_v4.get_by_puuid(puuid), entry, check_name=True, check_refresh=True)
   
   match.update_matches_by_puuid(summoner_info["puuid"])
@@ -82,7 +79,11 @@ def generate_crawl_data():
   version.update_item_info(latest_version)
   
   crawl.update_patch_note_summary(latest_version)
-  crawl.update_sale_info()
+  
+  try:
+    crawl.update_sale_info()
+  except Exception:
+    logger.error("챔피언 및 스킨 할인 정보 불러오기에 실패했습니다.")
   
   # API 서버에 알리기
   try:
@@ -91,7 +92,7 @@ def generate_crawl_data():
     logger.error("API 서버 동기화에 실패했습니다.")
   
   return {
-    "message":"챔피언 맵 정보 생성 완료"
+    "message":"버전 및 크롤링 정보 업데이트 완료"
   }
     
 @master_route.route("/refresh/match/<match_id>", methods=["POST"])
@@ -123,6 +124,7 @@ def update_season_starts():
     
     if is_changed:
       match.clear()
+      summoner.clear_summoner()
       
   except Exception:
     return {

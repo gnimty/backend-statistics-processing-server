@@ -25,6 +25,7 @@ def clear():
   db[col].delete_many({})
   db["participants"].delete_many({})
   db["teams"].delete_many({})
+  db["summoner_matches"].delete_many({})
 
 def delete_participant(match_id, participant_id):
   db["participants"].delete_one({"matchId":match_id, "participantId":participant_id})
@@ -317,7 +318,7 @@ def update_match(match_id, collect=False):
     db["teams"].insert_many(info_teams)
     db["participants"].insert_many(info_participants)
     
-  if match["queueId"]!=430: # 빠른 대전 게임을 제외한 3개의 게임 모드는 raw data로 넘어감
+  if match["queueId"]!=490: # 빠른 대전 게임을 제외한 3개의 게임 모드는 raw data로 넘어감
     if not collect: # 유저 요청에 의한 match 수집이라면 
       if not Redis.check_processed(match_id): # Redis set에 추가 후 raw 데이터 삽입
         Redis.add_to_set(match_id)
@@ -347,7 +348,7 @@ def update_matches_by_puuid(puuid, collect = False):
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
   if not collect: # 유저의 요청에 의한 매치정보 갱신일 경우 thread로 동작
     # 1. match_ids 를 10개의 구간으로 나누기
-    interval = len(match_ids)//9
+    interval = (len(match_ids)//9)+1
     
     # 2. 10개의 thread가 각 match ids들을 돌면서 update
     threads = []

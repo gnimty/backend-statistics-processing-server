@@ -32,7 +32,7 @@ def update_total_match_ids(puuid, collect = False) -> list:
 
   queues = [420,440,450]
   if not collect:
-    queues.append(430)
+    queues.append(490)
   
   # 가장 최근 match id 가져오기
   result = db_riot[col].find_one({"puuid": puuid})
@@ -40,14 +40,14 @@ def update_total_match_ids(puuid, collect = False) -> list:
   if not result:
     old_matches = { #마지막으로 조회한 match id 하한선
       420:[],
-      430:[],
+      490:[],
       440:[],
       450:[],
     }
   else:
     old_matches = { #마지막으로 조회한 match id 하한선
       420:result.get("summoner_match_ids"),
-      430:result.get("summoner_match_ids_blind"),
+      490:result.get("summoner_match_ids_blind"),
       440:result.get("summoner_match_ids_flex"),
       450:result.get("summoner_match_ids_aram"),
     }
@@ -55,7 +55,7 @@ def update_total_match_ids(puuid, collect = False) -> list:
   
   latest_match_id = { #마지막으로 조회한 match id 하한선
     420:"KR_0000000000",
-    430:"KR_0000000000",
+    490:"KR_0000000000",
     440:"KR_0000000000",
     450:"KR_0000000000",
   }
@@ -92,7 +92,7 @@ def update_total_match_ids(puuid, collect = False) -> list:
       {'puuid': puuid},
       {"$set": {
         "summoner_match_ids": total.get(420),
-        "summoner_match_ids_blind": total.get(430),
+        "summoner_match_ids_blind": total.get(490),
         "summoner_match_ids_flex": total.get(440),
         "summoner_match_ids_aram": total.get(450),
       }}, True)

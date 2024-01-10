@@ -77,6 +77,8 @@ def get_summoner_by_id(summoner_id):
   
   ranks = delayable_request(url)
   
+  if not ranks:
+    return None
   first = next((rank for rank in ranks))
   
   total = {

@@ -18,7 +18,7 @@ def task_under_master(tier, division, queue, collect):
   while True:
     entries = league_exp_v4.get_summoners_under_master(
         tier, division, queue=queue, page=page)
-
+    
     if len(entries) == 0:
       break
 
@@ -29,8 +29,11 @@ def task_under_master(tier, division, queue, collect):
 
 
 def task_over_master(league, queue, collect):
-  entries = league_exp_v4.get_top_league(league, queue=queue)
-
+  try:
+    entries = league_exp_v4.get_top_league(league, queue=queue)
+  except CustomUserError:
+    logger.error("랭크 정보가 존재하지 않습니다.")
+    return 
   for entry in entries:
     summoner.update_by_summoner_brief(entry, collect=collect)
 

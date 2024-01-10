@@ -19,11 +19,8 @@ def init():
   if not result:
     epoch_seconds = int(datetime.datetime.strptime("20230719000000", "%Y%m%d%H%M%S").timestamp())
 
-    result = {"startAt":epoch_seconds}
-    db[col].update_one({"seasonName":"13_S2"},{"$set":{
-      "startAt":epoch_seconds,
-      "seasonName": "13_S2"
-    }}, True)
+    result = {"startAt":epoch_seconds,
+              "seasonName": "13_S2"}
     
   season_start_epoch = result["startAt"]
   season_name = result["seasonName"]

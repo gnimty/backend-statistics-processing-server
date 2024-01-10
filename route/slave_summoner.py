@@ -20,4 +20,16 @@ def collect_summoners():
   return {
     "message":"success"
   }
-  
+
+
+schedule = [
+    # 수집한 raw data 압축하여 cloud로 전송
+    {
+      "job":collect_summoners,
+      "method":"interval",
+      "time":{
+        "hours":2
+      }
+    }
+  ]
+
