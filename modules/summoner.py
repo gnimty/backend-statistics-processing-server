@@ -41,7 +41,6 @@ def clear_summoner():
   db_riot[col].update_many({}, update_operation)
   db_riot["summoner_history"].delete_many({})
   db_riot["summoner_history_flex"].delete_many({})
-  db_riot["summoner_matches"].delete_many({})
   
 def delete_one_by_puuid(puuid):
   db_riot[col].delete_one({"puuid":puuid})

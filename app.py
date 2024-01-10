@@ -53,6 +53,10 @@ elif process=="slave_summoner":
   
   Thread(target = slave_summoner.collect_summoners, name="main").start()
   
+  if env!="local":
+    start_schedule(slave_summoner.schedule)
+    logger.info("소환사 배치 및 통계 배치가 시작됩니다.")
+  
 elif process=="slave_match" or process=="slave_match_2":
   from route import slave_match
   app.register_blueprint(slave_match.slave_match_route)
