@@ -18,7 +18,8 @@ class CustomMatchThreadTask():
 
   # set_lock = raw_match.RawMatch.set_lock
   # match_id_set = raw_match.RawMatch.match_ids_set
-  
+  exit_event = threading.Event()
+    
   # 쓰레드 생성
   threads = []
   thread1_flag  = False
@@ -50,6 +51,10 @@ class CustomMatchThreadTask():
         logger.info("puuid = %s match id 수집 실패", puuid)
         continue
       for match_id in match_ids:
+        if cls.exit_event.is_set():
+          logger.info("강제 쓰레드 종료")
+          return
+        
         if cls.match_ids_queue.qsize() >= 1000:
           logger.info("저장된 match id가 너무 많습니다. 10초간 유휴")
           time.sleep(5)
@@ -130,3 +135,9 @@ class CustomMatchThreadTask():
     logger.info("모든 쓰레드들을 종료합니다. ")
     cls.in_task = False
     cls.thread1_flag = False
+    cls.exit_event.clear()
+  
+  @classmethod
+  def stop(cls):
+    cls.exit_event.set()
+    cls.thread1_flag = True

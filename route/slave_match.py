@@ -20,3 +20,11 @@ def collect_match():
     return {
         "message": "success"
     }
+
+@slave_match_route.route("/collect/match/stop", methods=["POST"])
+def stop_collect_match():
+    CustomMatchThreadTask.stop()
+
+    return {
+        "message": "success"
+    }
