@@ -24,9 +24,10 @@ class MMR(Enum):
     
     def mmr_to_tier(mmr: int): # 우선 2800 이상은 MASTER 이상으로 기재, 추후 그마/챌컷 db에 적재
         if mmr<0: 
-            return None
+            return (None, None)
         for std_mmr in MMR:
             if mmr >= std_mmr.value:
                 if std_mmr.value>=2800:
-                    return "master"
-                return std_mmr.name
+                    return ("master", 1)
+                
+                return (std_mmr.name, 4 - int((mmr - std_mmr.value)/100))

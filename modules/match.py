@@ -307,11 +307,12 @@ def update_match(match_id, collect=False):
     info_participants[i].update(info_timelines[i])
   
   if len(summoner_tiers)==0:
-    avg_tier = None
+    avg_tier, avg_division = None, None
   else:
-    avg_tier = MMR.mmr_to_tier(sum(summoner_tiers)/len(summoner_tiers))
+    avg_tier, avg_division = MMR.mmr_to_tier(sum(summoner_tiers)/len(summoner_tiers))
   
   match["avg_tier"] = avg_tier
+  match["avg_division"] = avg_division
   
   if not collect: # 유저의 직접 갱신 요청의 경우에만 db에 저장
     db["matches"].insert_one(match)
