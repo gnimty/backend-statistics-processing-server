@@ -17,7 +17,7 @@ class SummonerUpdateEntry:
     self.data["iconId"]:int = summoner.get("profileIconId") or 100
     
     for suffix, my_suffix in [("",""), ("Flex", "_flex")]:
-      self.data["tier"+suffix]:str = summoner.get("queue")  
+      self.data["tier"+suffix]:str = summoner.get("queue"+my_suffix)  
       if self.data["tier"+suffix]:
         self.data["tier"+suffix] = self.data["tier"+suffix].lower()
       self.data["division"+suffix]:int = summoner.get("tier"+my_suffix)
@@ -25,7 +25,7 @@ class SummonerUpdateEntry:
       self.data["mmr"+suffix]:int = summoner.get("mmr"+my_suffix)
       self.data["mostLanes"+suffix]:list(str) = summoner.get("mostLanes"+my_suffix) or []
       self.data["mostChampionIds"+suffix]:list(int) = summoner.get("mostChampionIds"+my_suffix) or []
-    
+    print(self.data)
   # def toJSON(self):
 	#   return json.dumps(self.data,default=lambda o:o.__dict__,sort_keys=True,indent=4)
  
