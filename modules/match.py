@@ -339,11 +339,12 @@ def update_matches_by_match_ids(match_ids):
     
 def collect_matches_by_puuids(puuids):
   for puuid in puuids:
-    update_matches_by_puuid(puuid, collect=True)
+    update_matches_by_summoner(puuid, collect=True)
 
 
 
-def update_matches_by_puuid(puuid, collect = False):
+def update_matches_by_summoner(summoner_info, collect = False):
+  puuid = summoner_info["puuid"]
   match_ids = summoner_matches.update_total_match_ids(puuid, collect=collect)
   
   # 모든 매치정보 업데이트 후 summoner_matches, summoner_plays (전체 플레이 요약 정보), summoner (최근 플레이 요약 정보) 업데이트
@@ -364,13 +365,12 @@ def update_matches_by_puuid(puuid, collect = False):
     for thread in threads:
       thread.join()
     
-    summoner_plays.update_by_puuid(puuid, None)
-    summoner_plays.update_by_puuid(puuid, 420)
-    summoner_plays.update_by_puuid(puuid, 440)
-    summoner.update_summary(puuid)
+    summoner_plays.update_by_summoner(summoner_info, None)
+    summoner_plays.update_by_summoner(summoner_info, 420)
+    summoner_plays.update_by_summoner(summoner_info, 440)
     
-    target_summoner = summoner.find_by_puuid(puuid)
-    asyncio.run(csmq.add_summoner(target_summoner))
+    summoner.update_summary(puuid)
+    asyncio.run(csmq.add_summoner(summoner_info))
   else:
     update_matches_by_match_ids(match_ids)
   

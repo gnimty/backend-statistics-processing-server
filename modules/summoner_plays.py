@@ -6,7 +6,9 @@ from modules.season import season_name
 col = "summoner_plays"
 db = Mongo.get_client("riot")
 
-def update_by_puuid(puuid, queueId):
+def update_by_summoner(summoner_info, queueId):
+  
+  puuid = summoner_info["puuid"]
   match_cond = {
     'puuid': puuid,
   }
@@ -103,11 +105,12 @@ def update_by_puuid(puuid, queueId):
   # 1. summoner가 play한 participant 정보를 전부 aggregation load
   aggregate_result = list(db["participants"].aggregate(pipeline))
   
-  for result in aggregate_result:
-    result["queueId"] = queueId
-  
   # 2. 이 정보를 summoner_plays collection에 update
   for result in aggregate_result:
+    result["queueId"] = queueId
+    if queueId==420:
+      result["mmr"] = summoner_info.get("mmr")
+    
     db[target_col].update_one(
       {
         "puuid": puuid,

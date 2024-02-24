@@ -52,7 +52,7 @@ def refresh_summoner(puuid):
   
   summoner.update(summoner_v4.get_by_puuid(puuid), entry, check_name=True, check_refresh=True)
   
-  match.update_matches_by_puuid(summoner_info["puuid"])
+  match.update_matches_by_summoner(summoner_info)
   
   ##### 소환사 정보 업데이트 치기 #####
   new_summoner_info = summoner.find_by_puuid(puuid)
