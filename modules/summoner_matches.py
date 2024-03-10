@@ -77,11 +77,11 @@ def update_total_match_ids(puuid, collect = False) -> list:
     # 그렇지 않으면 계속 가져와서 all_matches_ids에 갖다붙이기
     while True:
       results =match_v4.get_summoner_match_ids(puuid, start = start_index, count = 100, queue=queue, collect = collect)
+      all_match_ids.update(set(results))
+      start_index+=100
       if len(results)==0 or results[-1] <= latest_match_id[queue]:
         break
-      else:
-        all_match_ids.update(set(results))
-        start_index+=100
+        
   
     all_match_ids.update(old_matches[queue])
   
