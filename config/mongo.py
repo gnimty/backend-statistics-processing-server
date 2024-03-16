@@ -48,6 +48,11 @@ class Mongo:
         ("internal_tagname", ASCENDING)
     ], name="summoners_index_by_internal_tagname")
 
+    summoners_index_by_internal_tagname_and_mmr = IndexModel([
+        ("internal_tagname", ASCENDING),
+        ("mmr", DESCENDING)
+    ], name="summoners_index_by_internal_tagname_and_mmr")
+    
     summoner_history_index = IndexModel([
         ("puuid", ASCENDING)
     ], name="summoner_history_index")
@@ -121,7 +126,7 @@ class Mongo:
         ("order",ASCENDING)
     ], name = "version_index")
     
-    db.summoners.create_indexes([summoners_index_by_mmr, summoners_index_by_mmr_flex, summoners_index_by_internal_tagname, summoners_index_by_summoner_id])
+    db.summoners.create_indexes([summoners_index_by_mmr, summoners_index_by_mmr_flex, summoners_index_by_internal_tagname, summoners_index_by_summoner_id, summoners_index_by_internal_tagname_and_mmr])
     db.summoner_history.create_indexes([summoner_history_index])
     db.summoner_history_flex.create_indexes([summoner_history_flex_index])
     db.summoner_matches.create_indexes([summoner_matches_index])
