@@ -28,3 +28,14 @@ def stop_collect_match():
     return {
         "message": "success"
     }
+    
+schedule = [
+    # 수집한 raw data 압축하여 cloud로 전송
+    {
+      "job":collect_match,
+      "method":"interval",
+      "time":{
+        "hours":2
+      }
+    }
+  ]

@@ -50,6 +50,12 @@ def find_all_puuids() -> list:
   
   return [s['puuid'] for s in puuids if 'puuid' in s]
 
+def find_all_puuids_with_cond(cond) -> list:
+  puuids = list(db_riot[col].find(cond, {"_id":0, "puuid":1}))
+  
+  return [s['puuid'] for s in puuids if 'puuid' in s]
+
+
 def find_one_by_summoner_id(summoner_id):
   """소환사 ID로 소환사 정보 조회
 
@@ -194,7 +200,7 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False, 
                 "queue": summoner_brief.get("queue"+suffix),
                 "tier":summoner_brief.get("tier"+suffix),
                 "leaguePoints":summoner_brief.get("leaguePoints"+suffix),
-                "updatedAt":summoner["updatedAt"]
+                "updatedAt":datetime.now()
             }]
         }
       else:
@@ -203,7 +209,7 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False, 
           "queue":summoner_brief.get("queue"+suffix),
           "tier":summoner_brief.get("tier"+suffix),
           "leaguePoints":summoner_brief.get("leaguePoints"+suffix),
-          "updatedAt":summoner["updatedAt"],
+          "updatedAt":datetime.now(),
         })
       
       target_collection = "summoner_history"+suffix

@@ -52,24 +52,16 @@ def update_total_match_ids(puuid, collect = False) -> list:
       450:result.get("summoner_match_ids_aram"),
     }
   
-  
-  latest_match_id = { #마지막으로 조회한 match id 하한선
-    420:"KR_0000000000",
-    490:"KR_0000000000",
-    440:"KR_0000000000",
-    450:"KR_0000000000",
-  }
-  
   total = {}
   
   for queue in queues:
     # 모든 matchId 담을 변수, 최근 matchId 우선 가져오기 (100개씩))
-    all_match_ids = set()
-    
-    if old_matches[queue] and len(old_matches[queue])>=1: 
-      latest_match_id[queue] = old_matches[queue][0]
-    else:
-      old_matches[queue] = []
+    all_match_ids = []
+    old_matches_set = set(old_matches[queue])
+    # if old_matches[queue] and len(old_matches[queue])>=1: 
+    #   latest_match_id[queue] = old_matches[queue][0]
+    # else:
+    #   old_matches[queue] = []
     
     start_index=0
     
@@ -77,15 +69,15 @@ def update_total_match_ids(puuid, collect = False) -> list:
     # 그렇지 않으면 계속 가져와서 all_matches_ids에 갖다붙이기
     while True:
       results =match_v4.get_summoner_match_ids(puuid, start = start_index, count = 100, queue=queue, collect = collect)
-      all_match_ids.update(set(results))
+      all_match_ids.extend(list(results))
       start_index+=100
-      if len(results)==0 or results[-1] <= latest_match_id[queue]:
+      if len(results)<100:
         break
-        
+      elif results[-1] in old_matches_set:
+        all_match_ids.extend(old_matches[queue][old_matches[queue].index(all_match_ids[-1])+1:])
+        break
   
-    all_match_ids.update(old_matches[queue])
-  
-    total[queue] = sorted(list(all_match_ids), reverse=True)
+    total[queue] = all_match_ids
   
   if not collect:
     db_riot[col].update_one(
