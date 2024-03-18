@@ -222,8 +222,7 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False, 
   if check_refresh:
     summoner["updatedAt"] = datetime.now()
   
-  if not collect:
-    asyncio.run(csmq.add_summoner(summoner))
+  asyncio.run(csmq.add_summoner(summoner))
   
   db_riot[col].update_one(
       {"puuid": summoner["puuid"]},

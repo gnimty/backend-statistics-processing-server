@@ -87,8 +87,8 @@ class CustomMatchThreadTask():
       raise AlreadyInTask("이미 소환사 전적 정보를 수집 중입니다.")
     
     cls.in_task = True
-    puuids = summoner.find_all_puuids()
-    
+    # puuids = summoner.find_all_puuids()
+    puuids = summoner.find_all_puuids_with_cond({"mmr":{"$gte":1600}})
     if skip:
         puuids = puuids[len(puuids)//2:]
     else:
