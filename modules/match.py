@@ -325,9 +325,9 @@ def update_match(match_id, collect=False):
         Redis.add_to_set(match_id)
       else: # 이미 redis set에 존재한다면 넘기기
         return
-      
-    raw = RawMatch(match_id, avg_tier, info, result_timeline, info_timelines)
-    db["raw"].insert_one(raw.__dict__)
+    if match.get("avg_tier") and match.get("avg_tier") not in ["iron", "bronze", "silver", "gold"]:
+      raw = RawMatch(match_id, avg_tier, info, result_timeline, info_timelines)
+      db["raw"].insert_one(raw.__dict__)
 
 
 def update_matches_by_match_ids(match_ids):
