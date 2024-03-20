@@ -2,9 +2,9 @@ version: "3.8"
 services:
   # 배치서버
   statistics-processing-server:
-    image: statistics-processing-server
+    image: solmin2/statistics-processing-server:latest
     container_name: statistics-processing-server
-    # build: .
+    # build:
     #   context: .
     #   dockerfile: Dockerfile # dockerfile : 도커파일 경로
     restart: unless-stopped
@@ -28,7 +28,7 @@ services:
       - ./raw:/app/raw
       # - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
   slave-summoner-server:
-    image: statistics-processing-server
+    image: solmin2/statistics-processing-server:latest
     container_name: slave-summoner-server
     restart: unless-stopped
     ports:
@@ -49,7 +49,7 @@ services:
       - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
 
   slave-match-server:
-    image: statistics-processing-server
+    image: solmin2/statistics-processing-server:latest
     container_name: slave-match-server
     restart: unless-stopped
     ports:
@@ -68,7 +68,7 @@ services:
       - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
 
   slave-match-server-2:
-    image: statistics-processing-server
+    image: solmin2/statistics-processing-server:latest
     container_name: slave-match-server-2
     restart: unless-stopped
     ports:
