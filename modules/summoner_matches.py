@@ -30,9 +30,23 @@ def update_total_match_ids(puuid, collect = False) -> list:
       DataNotExists
   """
 
-  queues = [420,440,450]
+  queues = [420,440]
   if not collect:
-    queues.append(490)
+    queues.append(490, 450)
+  
+  # 수집 모드일 때
+  if collect:
+    recent_days_match_ids=[]
+    for queue in queues:
+      start_index=0
+      while True:
+        results = match_v4.get_summoner_match_ids(puuid, start = start_index, count = 100, queue=queue, collect = collect)
+        recent_days_match_ids.extend(list(results))
+        start_index+=100
+        if len(results)<100:
+          break
+      
+    return recent_days_match_ids
   
   # 가장 최근 match id 가져오기
   result = db_riot[col].find_one({"puuid": puuid})
@@ -58,10 +72,6 @@ def update_total_match_ids(puuid, collect = False) -> list:
     # 모든 matchId 담을 변수, 최근 matchId 우선 가져오기 (100개씩))
     all_match_ids = []
     old_matches_set = set(old_matches[queue])
-    # if old_matches[queue] and len(old_matches[queue])>=1: 
-    #   latest_match_id[queue] = old_matches[queue][0]
-    # else:
-    #   old_matches[queue] = []
     
     start_index=0
     
@@ -74,20 +84,20 @@ def update_total_match_ids(puuid, collect = False) -> list:
       if len(results)<100:
         break
       elif results[-1] in old_matches_set:
-        all_match_ids.extend(old_matches[queue][old_matches[queue].index(all_match_ids[-1])+1:])
+        extended = old_matches[queue][old_matches[queue].index(all_match_ids[-1])+1:]
+        all_match_ids.extend(extended)
         break
   
     total[queue] = all_match_ids
-  
-  if not collect:
-    db_riot[col].update_one(
-      {'puuid': puuid},
-      {"$set": {
-        "summoner_match_ids": total.get(420),
-        "summoner_match_ids_blind": total.get(490),
-        "summoner_match_ids_flex": total.get(440),
-        "summoner_match_ids_aram": total.get(450),
-      }}, True)
+    
+  db_riot[col].update_one(
+    {'puuid': puuid},
+    {"$set": {
+      "summoner_match_ids": total.get(420),
+      "summoner_match_ids_blind": total.get(490),
+      "summoner_match_ids_flex": total.get(440),
+      "summoner_match_ids_aram": total.get(450),
+    }}, True)
 
   total_list = []
   for match_ids in total.values():

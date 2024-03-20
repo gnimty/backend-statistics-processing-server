@@ -37,6 +37,7 @@ class RawMatch():
   }
   
   def __init__(self, matchId, avg_tier, info, timeline, processed_timeline):
+    logger.info(f"raw data with matchId = {matchId}, queueId = {info['queueId']}, gameVersion = {info['gameVersion']} ")
     self.collectAt = datetime.datetime.now()
     self.queueId = info["queueId"]
     
