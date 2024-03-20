@@ -221,7 +221,7 @@ schedule = [
     # },
     {
       "job":generate_crawl_data,
-      "method":"cron",
+      "method":"interval",
       "time":{
         "hour": 4
       }
