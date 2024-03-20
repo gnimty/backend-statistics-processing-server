@@ -223,7 +223,7 @@ schedule = [
       "job":generate_crawl_data,
       "method":"interval",
       "time":{
-        "hour": 4
+        "hours": 4
       }
     }
   ]
