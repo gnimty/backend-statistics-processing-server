@@ -27,23 +27,14 @@ class Redis:
   @classmethod
   def add_to_set(cls, match_id):
     with cls.lock:
-      while True:
-            try:
-              # 처리된 raw data의 id를 set에 추가
-              cls.redis_client.sadd('processed_ids', match_id)
-            except BusyLoadingError as e:
-              logger.error("Redis is loading the dataset in memory")
-              time.sleep(5)
+      # 처리된 raw data의 id를 set에 추가
+      cls.redis_client.sadd('processed_ids', match_id)
+      
         
   @classmethod        
   def check_processed(cls, match_id):
-        with cls.lock:
-          while True:
-            try:
-              return cls.redis_client.sismember('processed_ids', match_id)
-            except BusyLoadingError as e:
-              logger.error("Redis is loading the dataset in memory")
-              time.sleep(5)
+    with cls.lock:
+      return cls.redis_client.sismember('processed_ids', match_id)
               
             
 
