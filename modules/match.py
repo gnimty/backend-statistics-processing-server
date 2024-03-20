@@ -320,12 +320,10 @@ def update_match(match_id, collect=False):
     db["participants"].insert_many(info_participants)
     
   if match["queueId"] not in [490, 450]: # 빠른 대전, 자유 랭크 게임을 제외한 2개의 게임 모드는 raw data로 넘어감
-    if not collect: # 유저 요청에 의한 match 수집이라면 
+    if (match.get("avg_tier")) and (match.get("avg_tier") not in ["iron", "bronze", "silver", "gold"]):
       if not Redis.check_processed(match_id): # Redis set에 추가 후 raw 데이터 삽입
         Redis.add_to_set(match_id)
-      else: # 이미 redis set에 존재한다면 넘기기
-        return
-    if (match.get("avg_tier")) and (match.get("avg_tier") not in ["iron", "bronze", "silver", "gold"]):
+      
       raw = RawMatch(match_id, avg_tier, info, result_timeline, info_timelines)
       db["raw"].insert_one(raw.__dict__)
 
