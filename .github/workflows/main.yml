@@ -50,6 +50,16 @@ jobs:
           source: docker-compose-dev.yml
           target: "/home/${{ secrets.DEV_USER }}/${{ secrets.DIR }}"
 
+      - name: docker-compose.yml 파일 이동
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.DEV_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: Dockerfile
+          target: "/home/${{ secrets.DEV_USER }}/${{ secrets.DIR }}"
+
       - name: Docker 이미지 pull 이후 down/up
         uses: appleboy/ssh-action@master
         with:
@@ -64,5 +74,5 @@ jobs:
             sudo echo "${{ secrets.DEV_COMPOSE_ENV }}" > docker-compose.env
             sudo echo "${{ secrets.GOOGLE_CREDENTIAL }}" > ./credentials/google_credential.json
             sudo docker-compose -f docker-compose-dev.yml --env-file docker-compose.env down -v
-            
+            docker build -t statistics-processing-server .
             sudo docker-compose -f docker-compose-dev.yml --env-file docker-compose.env up -d --build
