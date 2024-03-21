@@ -118,6 +118,9 @@ class RawMatch():
         totalGold5M[appended_idx] = targetParticipantFrame["totalGold"]
         xp5M[appended_idx] = targetParticipantFrame["xp"]
       
+      # 순서만 바뀐 spell 짝 제거
+      if participant["summoner1Id"] > participant["summoner2Id"]:
+        participant["summoner1Id"], participant["summoner2Id"] = participant["summoner2Id"], participant["summoner1Id"] 
       
       added_participants = {
           "puuid": participant["puuid"],
