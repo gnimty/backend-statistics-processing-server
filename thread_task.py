@@ -75,11 +75,11 @@ class CustomMatchThreadTask():
             # 2번 쓰레드 작업 수행
             match.update_match(match_id, collect=True)
         except queue.Empty as e:
-            logger.info("match id queue가 비어 있으므로 10초 동안 유휴합니다.")
-            time.sleep(10)
+            logger.info("match id queue가 비어 있으므로 5초 동안 유휴합니다.")
+            time.sleep(5)
             continue
         except Exception as e:
-            logger.info("match id = %s에 해당하는 전적 정보 업데이트를 실패했습니다.")
+            logger.info("match id = %s에 해당하는 전적 정보 업데이트를 실패했습니다.", match_id)
 
   @classmethod
   def start(cls, skip = False):
@@ -100,13 +100,15 @@ class CustomMatchThreadTask():
     # 모든 puuid를 탐색하면서 해당 소환사가 진행한 모든 전적 정보 업데이트
     # 10개 구간으로 나누어 진행
     
-    interval = len(puuids)//3
+    interval = len(puuids)//5
     
     thread1_list=[]
     thread2_list=[]
-    for i in range(4):
-      target_puuids = list(puuids[i*interval:(i+1)*interval])
-      
+    for i in range(5):
+      if i==4:
+        target_puuids = list(puuids[i*interval:])
+      else:
+        target_puuids = list(puuids[i*interval:(i+1)*interval])
       t1 = threading.Thread(target = cls.thread_1, args = (target_puuids,), name = "thread_1")
       
       cls.threads.append(t1)
@@ -115,7 +117,7 @@ class CustomMatchThreadTask():
     
     time.sleep(2)
     
-    for i in range(20):
+    for i in range(10):
       t2 = threading.Thread(target=cls.thread_2 , name = "thread_2")
       
       cls.threads.append(t2)

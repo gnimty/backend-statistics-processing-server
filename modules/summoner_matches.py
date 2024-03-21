@@ -30,10 +30,10 @@ def update_total_match_ids(puuid, collect = False) -> list:
       DataNotExists
   """
 
-  queues = [420,440]
+  queues = [420,450]
   if not collect:
     queues.append(490)
-    queues.append(450)
+    queues.append(440)
   
   # 수집 모드일 때
   if collect:

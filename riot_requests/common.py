@@ -5,6 +5,9 @@ import log
 from error.custom_exception import ForbiddenError
 from config.appconfig import current_config as config
 import urllib3
+import os
+
+process = os.getenv("PROCESS") or "master"
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -24,7 +27,9 @@ def delayable_request(url, timeout=10) -> any:
       request (any)
   """
   
-  logger.info(f'다음으로 request : {url}')
+  if process=="master":
+    logger.info(f'다음으로 request : {url}')
+    
   response = requests.get(url, headers=headers, timeout=timeout, verify=False)
 
   # API Key 만료

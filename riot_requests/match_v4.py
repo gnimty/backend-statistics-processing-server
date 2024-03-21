@@ -27,7 +27,7 @@ def get_summoner_match_ids(puuid, start=0, count = 30, queue=420, collect = Fals
   """
   
   if collect:
-    startTime = date_calc.get_epoch_by_datetime(datetime.now() - timedelta(days = 1))
+    startTime = date_calc.get_epoch_by_datetime(datetime.now() - timedelta(days = 2))
   else:
     startTime = season_start_epoch
     

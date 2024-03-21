@@ -114,17 +114,13 @@ def update_match(match_id, collect=False):
       }
   """
 
-  match = db[col].find_one(
-      {"matchId": match_id},
-      {"_id": 0}
-  )
-  
-  # if match_id=="KR_6831842925":
-  #   pass
 
-  if match: # DB에 match info가 이미 존재하면 업데이트 안함
+  if db[col].find_one({"matchId": match_id}, {"_id": 0}): # DB에 match info가 이미 존재하면 업데이트 안함
     return
 
+  if collect and db["raw"].find_one({"metadata.matchId": match_id}, {"_id": 0}):
+    return
+  
   data = match_v4.get_by_match_id(match_id)
   
   result = data["result"]
@@ -205,7 +201,7 @@ def update_match(match_id, collect=False):
       win="false"
     
     
-    history = find_history_by_std_date(participant["puuid"], match["gameStartAt"], "RANK_FLEX_SR" if match["queueId"]==440 else "RANK_SOLO_5x5")
+    history = find_history_by_std_date(participant["puuid"], match["gameStartAt"], "RANK_SOLO_5x5")
       
     if history["queue"]!=None:
       summoner_tiers.append(MMR.rank_to_mmr(history["queue"], history["tier"], history["leaguePoints"]))
@@ -319,13 +315,14 @@ def update_match(match_id, collect=False):
     db["teams"].insert_many(info_teams)
     db["participants"].insert_many(info_participants)
     
-  if match["queueId"] not in [490, 450]: # 빠른 대전, 자유 랭크 게임을 제외한 2개의 게임 모드는 raw data로 넘어감
-    if (match.get("avg_tier")) and (match.get("avg_tier") not in ["iron", "bronze", "silver", "gold"]):
+  if match["queueId"] not in [490, 440]: # 빠른 대전, 자유 랭크 게임을 제외한 2개의 게임 모드는 raw data로 넘어감
+    if (match.get("avg_tier")!=None) and (match.get("avg_tier") not in ["iron", "bronze", "silver", "gold"]):
       if not Redis.check_processed(match_id): # Redis set에 추가 후 raw 데이터 삽입
         Redis.add_to_set(match_id)
       
       raw = RawMatch(match_id, avg_tier, info, result_timeline, info_timelines)
-      db["raw"].insert_one(raw.__dict__)
+      # db["raw"].insert_one(raw.__dict__)
+      db["raw"].update_one({"metadata.matchId":match_id}, {"$set":raw.__dict__}, True)
 
 
 def update_matches_by_match_ids(match_ids):
