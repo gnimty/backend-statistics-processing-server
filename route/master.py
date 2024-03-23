@@ -111,12 +111,6 @@ def update_season_starts():
   data = request.get_json()
   
   try:
-    # TODO 나중에 안전장치 다시 만들기
-    key = data["key"]
-    
-    if not key or key!="rlathfals12#":
-      raise Exception()
-    
     startAt = datetime.datetime.strptime(data["startAt"], "%Y%m%d%H%M%S")
     seasonName = data["seasonName"]
     
@@ -194,22 +188,89 @@ def remove_duplicates():
     "message":"success"
   }
 
+@master_route.route("/test")
+def test():
+  import math
+  from config.mongo import Mongo
+  db = Mongo.get_client("riot")
+  stat = Mongo.get_client("stat")
+  # 1. 챔피언 맵
+  championMap ={c["championId"]:c["kr"] for c in db["champion_info"].find({})}
+  
+  # 2. 통계정보 가져와서 championId, winrate, pickrate, banrate 추출
+  stats = [{"championId":str(s["championId"]),"win_rate":s["win_rate"], "pick_rate":s["pick_rate"],"ban_rate":s["ban_rate"], "teamPosition":s["teamPosition"], "position_cnt":s["position_cnt"]} for s in list(stat["champion_statistics_solo_platinum"].find({}))]
+  # 3. 위 정보에 championName, score 추출
+  for s in stats:
+    s["championName"]=championMap[s["championId"]]
+    del s["championId"]
+    
+    
+    s["score"] = (
+      50 +
+        1.6 * (s["win_rate"]*100 - 50) +
+        3.5 * (math.log(s["pick_rate"]) - math.log(1 - s["ban_rate"]) - math.log(2 / s["position_cnt"])) /
+        math.log(200 / s["position_cnt"])
+    )
+    
+    del s["position_cnt"]
+    
+    if s["score"]>=60.0:
+      s["tier"] = "OP"
+    elif s["score"]>=54.5:
+      s["tier"] = "1"
+    elif s["score"]>=51.5:
+      s["tier"] = "2"
+    elif s["score"]>=50.0:
+      s["tier"] = "3"
+    elif s["score"]>=45.5:
+      s["tier"] = "4"
+    else:
+      s["tier"] = "5"
+    
+    s["win_rate"] = float("{:.2f}".format(s["win_rate"]*100))
+    s["pick_rate"] = float("{:.2f}".format(s["pick_rate"]*100))
+    s["ban_rate"] = float("{:.2f}".format(s["ban_rate"]*100))
+    
+  # 4. score로 정렬
+  stats.sort(key=lambda x: -x["score"])
+  
+  
+  
+  # 5. 라인별로 표출
+  result = []
+  
+  for lane in ["TOP","JUNGLE", "MIDDLE", "BOTTOM","UTILITY"]:
+    result.append({"lane":lane, "data":[s for s in stats if s["teamPosition"]==lane]} )
 
+  return {"results":result}
 
 ## 비동기 request를 통해 slave process API 요청
 
-
+def a():
+  logger.info('a')
+  
+def b():
+  print('b')
 
 
 schedule = [
+  { 
+    "job":a,
+    "id":"a_1",
+    "method":"cron",
+    "time": {
+      "second":'1/2'
+    }
+  },
+  
     # 수집한 raw data 압축하여 cloud로 전송
-    {
-      "job":flsuh_raw_datas,
-      "method":"cron",
-      "time":{
-        "hour":0
-      }
-    },
+    # {
+    #   "job":flsuh_raw_datas,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour":0
+    #   }
+    # },
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
     # {
@@ -219,12 +280,14 @@ schedule = [
     #     "hours": app.config["MATCH_BATCH_HOUR"]
     #   }
     # },
-    {
-      "job":generate_crawl_data,
-      "method":"interval",
-      "time":{
-        "hours": 4
-      }
-    }
+    # {
+    #   "job":generate_crawl_data,
+    #   "method":"interval",
+    #   "time":{
+    #     "hours": 4
+    #   }
+    # }
+    
+    
   ]
 

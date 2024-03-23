@@ -33,9 +33,27 @@ schedule = [
     # 수집한 raw data 압축하여 cloud로 전송
     {
       "job":collect_match,
-      "method":"interval",
+      "method":"cron",
       "time":{
-        "hours":2
+        "hour":'1/2'
       }
-    }
+    },
+    {
+        "job":stop_collect_match,
+        "method":"cron",
+        "time":{
+            "hour": 23,
+            "minute": 55,
+        }
+    },
+    {
+      "job":collect_match,
+      "id":"re_collect_match",
+      "method":"cron",
+      "time":{
+            "hour": 0,
+            "minute": 20,
+        }
+    },
+    
   ]

@@ -22,6 +22,7 @@ class CustomMatchThreadTask():
     
   # 쓰레드 생성
   threads = []
+  # 해당 flag가 True면 thread1이 더 이상 동작하지 않음
   thread1_flag  = False
   
   @classmethod
