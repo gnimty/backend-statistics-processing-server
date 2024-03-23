@@ -87,7 +87,7 @@ def refresh_summoner(puuid):
   return {"message":"업데이트 완료"}
 
 @master_route.route("/flush")
-def flsuh_raw_datas():
+def flush_raw_data():
   RawMatch.raw_to_parquet_and_upload(scale=10000)
   
   return {
@@ -272,13 +272,13 @@ def test():
 
 schedule = [
     # 수집한 raw data 압축하여 cloud로 전송
-    # {
-    #   "job":flsuh_raw_datas,
-    #   "method":"cron",
-    #   "time":{
-    #     "hour":0
-    #   }
-    # },
+    {
+      "job":flush_raw_data,
+      "method":"cron",
+      "time":{
+        "hour":0
+      }
+    },
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
     # {
@@ -288,13 +288,13 @@ schedule = [
     #     "hours": app.config["MATCH_BATCH_HOUR"]
     #   }
     # },
-    # {
-    #   "job":generate_crawl_data,
-    #   "method":"interval",
-    #   "time":{
-    #     "hours": 4
-    #   }
-    # }
+    {
+      "job":generate_crawl_data,
+      "method":"interval",
+      "time":{
+        "hours": 4
+      }
+    }
     
     
   ]
