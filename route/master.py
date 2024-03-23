@@ -15,58 +15,22 @@ master_route = Blueprint('master_route', __name__)
 # 해당 tagName(gameName + tagLine)이 일치하는 소환사 정보 검색 또는 갱신
 @master_route.route("/lookup/summoner/by-name/<game_name>/<tag_line>", methods=["POST"])
 def lookup_summoner_by_name(game_name, tag_line):
-  internal_tagname = f"{make_internal_name(game_name)}#{make_tagname(tag_line)}"
-  
-  found = summoner.find_one_by_internal_tagname(internal_tagname)
-  
-  if found:
-    return {
-      "message":"소환사 정보가 이미 존재합니다.",
-      "puuid": found["puuid"]
-    }
-    
-  tagname = summoner_v4.get_summoner_by_name_and_tagline(game_name, tag_line)
-  
-  if tagname==None:
-    raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
-  
-  puuid = tagname.get("puuid")
-  summoner.update_by_puuid(puuid, tagname)
-  
-  return {
-    "message":"해당 소환사 정보가 존재하여 업데이트합니다.",
-    "puuid": puuid
-    }
+  return summoner.lookup_summoner_by_name(game_name, tag_line)
   
 @master_route.route("/lookup/summoner/by-puuid/<puuid>", methods=["POST"])
 def lookup_summoner_by_puuid(puuid):
-  found = summoner.find_by_puuid(puuid)
-  
-  if found:
-    return {
-      "message":"소환사 정보가 이미 존재합니다.",
-      "puuid": found["puuid"]
-    }
-    
-  summoner_info = summoner_v4.get_summoner_by_puuid(puuid)
-  
-  if summoner_info==None:
-    raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
-  
-  summoner.update_by_puuid(puuid, summoner_info)
-  
-  return {
-    "message":"해당 소환사 정보가 존재하여 업데이트합니다.",
-    "puuid": puuid
-    }  
+  return summoner.lookup_summoner_by_puuid(puuid)
   
   
 @master_route.route("/refresh/summoner/<puuid>", methods=["POST"] )
 def refresh_summoner(puuid):
-  
   # 만약 internal_name 해당하는 유저 정보가 존재한다면 가져온 summonerId로 refresh
   summoner_info = summoner.find_by_puuid(puuid)
   
+  if not summoner_info:
+    summoner.lookup_summoner_by_puuid(puuid)
+    summoner_info = summoner.find_by_puuid(puuid)
+    
   if not summoner_info:
     raise UserUpdateFailed("소환사 정보가 존재하지 않습니다. 업데이트 실패")
   

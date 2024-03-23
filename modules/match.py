@@ -10,6 +10,7 @@ from modules.tier_division_mmr import MMR
 from modules.raw_match import RawMatch
 from config.redis import Redis
 import threading
+import traceback
 
 # FIXME - pymongo insert operation 동작 시 원본 객체에 영향을 미치는 문제 발견
 # https://pymongo.readthedocs.io/en/stable/faq.html#writes-and-ids
@@ -171,6 +172,15 @@ def update_match(match_id, collect=False):
   else:
     win_team_id=info_teams[1]["teamId"]
   
+  # participant id 갱신로직 추가
+  puuids = [p["puuid"] for p in info["participants"]]
+  tracked_summoner_puuids = summoner.find_puuids_by_puuid_in(puuids)
+  
+  diffs = list(set(puuids) - set(tracked_summoner_puuids))
+  
+  for puuid in diffs:
+    summoner.lookup_summoner_by_puuid(puuid)
+  
   for participant in info["participants"]:
     lane = participant["teamPosition"]
     
@@ -330,6 +340,7 @@ def update_matches_by_match_ids(match_ids):
       try:
         update_match(match_id)
       except Exception:
+        traceback.print_exc()
         logger.error("matchId = %s에 해당하는 전적 정보를 불러오는 데 실패했습니다.", match_id)
     
 def collect_matches_by_puuids(puuids):

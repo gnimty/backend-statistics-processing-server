@@ -22,6 +22,52 @@ division = {
   "IV":4
 }
 
+def lookup_summoner_by_name(game_name, tag_line):
+  internal_tagname = f"{make_internal_name(game_name)}#{make_tagname(tag_line)}"
+  
+  found = find_one_by_internal_tagname(internal_tagname)
+  
+  if found:
+    return {
+      "message":"소환사 정보가 이미 존재합니다.",
+      "puuid": found["puuid"]
+    }
+    
+  tagname = summoner_v4.get_summoner_by_name_and_tagline(game_name, tag_line)
+  
+  if tagname==None:
+    raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
+  
+  puuid = tagname.get("puuid")
+  
+  update_by_puuid(puuid, tagname)
+  
+  return {
+    "message":"해당 소환사 정보가 존재하여 업데이트합니다.",
+    "puuid": puuid
+    }
+
+def lookup_summoner_by_puuid(puuid):
+  found = find_by_puuid(puuid)
+    
+  if found:
+    return {
+      "message":"소환사 정보가 이미 존재합니다.",
+      "puuid": found["puuid"]
+    }
+    
+  summoner_info = summoner_v4.get_summoner_by_puuid(puuid)
+  
+  if summoner_info==None:
+    raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
+  
+  update_by_puuid(puuid, summoner_info)
+  
+  return {
+    "message":"해당 소환사 정보가 존재하여 업데이트합니다.",
+    "puuid": puuid
+    }
+
 def clear_summoner():
   update_operation = {"$set": {
     "tier" : None,
@@ -144,6 +190,12 @@ def find_by_puuid(puuid):
 
   return summoner
 
+def find_puuids_by_puuid_in(puuids:list):
+  summoner_puuids = list(db_riot[col].find(
+    {"puuid": {"$in":puuids}}, 
+    {"_id": 0, "puuid":1}))
+
+  return [t["puuid"] for t in summoner_puuids]
 
 # check_name : tagName 갱신을 거친 데이터일 때 True -> 업데이트 시 tagName 반영하지 않음
 # check_refresh : 전적 갱신 시 타이머 적용할 때 True -> updateAt 필드를 갱신하지 않음
