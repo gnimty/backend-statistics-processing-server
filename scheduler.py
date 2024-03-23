@@ -10,8 +10,6 @@ def start_schedule(batchList):
     func, method, args, id = \
     batch.get("job"), batch.get("method"), batch.get("time"), batch.get('id')
     
-    print(func, method, args, id)
-    
     schedule.add_job(
       func, 
       method, 
