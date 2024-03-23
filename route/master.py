@@ -13,8 +13,8 @@ from config.appconfig import current_config as config
 master_route = Blueprint('master_route', __name__)
 
 # 해당 tagName(gameName + tagLine)이 일치하는 소환사 정보 검색 또는 갱신
-@master_route.route("/lookup/summoner/<game_name>/<tag_line>", methods=["POST"])
-def lookup_summoner(game_name, tag_line):
+@master_route.route("/lookup/summoner/by-name/<game_name>/<tag_line>", methods=["POST"])
+def lookup_summoner_by_name(game_name, tag_line):
   internal_tagname = f"{make_internal_name(game_name)}#{make_tagname(tag_line)}"
   
   found = summoner.find_one_by_internal_tagname(internal_tagname)
@@ -25,7 +25,7 @@ def lookup_summoner(game_name, tag_line):
       "puuid": found["puuid"]
     }
     
-  tagname = summoner_v4.get_tagname_by_name_and_tagline(game_name, tag_line)
+  tagname = summoner_v4.get_summoner_by_name_and_tagline(game_name, tag_line)
   
   if tagname==None:
     raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
@@ -37,6 +37,29 @@ def lookup_summoner(game_name, tag_line):
     "message":"해당 소환사 정보가 존재하여 업데이트합니다.",
     "puuid": puuid
     }
+  
+@master_route.route("/lookup/summoner/by-puuid/<puuid>", methods=["POST"])
+def lookup_summoner_by_puuid(puuid):
+  found = summoner.find_by_puuid(puuid)
+  
+  if found:
+    return {
+      "message":"소환사 정보가 이미 존재합니다.",
+      "puuid": found["puuid"]
+    }
+    
+  summoner_info = summoner_v4.get_summoner_by_puuid(puuid)
+  
+  if summoner_info==None:
+    raise SummonerNotExists("소환사 정보가 존재하지 않습니다.")
+  
+  summoner.update_by_puuid(puuid, summoner_info)
+  
+  return {
+    "message":"해당 소환사 정보가 존재하여 업데이트합니다.",
+    "puuid": puuid
+    }  
+  
   
 @master_route.route("/refresh/summoner/<puuid>", methods=["POST"] )
 def refresh_summoner(puuid):
@@ -249,13 +272,13 @@ def test():
 
 schedule = [
     # 수집한 raw data 압축하여 cloud로 전송
-    {
-      "job":flsuh_raw_datas,
-      "method":"cron",
-      "time":{
-        "hour":0
-      }
-    },
+    # {
+    #   "job":flsuh_raw_datas,
+    #   "method":"cron",
+    #   "time":{
+    #     "hour":0
+    #   }
+    # },
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
     # cf) 처리량이 매우 많고 API_LIMIT이 한정적이라 덮어씌워질 가능성 높음
     # {
@@ -265,13 +288,13 @@ schedule = [
     #     "hours": app.config["MATCH_BATCH_HOUR"]
     #   }
     # },
-    {
-      "job":generate_crawl_data,
-      "method":"interval",
-      "time":{
-        "hours": 4
-      }
-    }
+    # {
+    #   "job":generate_crawl_data,
+    #   "method":"interval",
+    #   "time":{
+    #     "hours": 4
+    #   }
+    # }
     
     
   ]

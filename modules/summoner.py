@@ -87,8 +87,8 @@ def find_one_by_internal_tagname(internal_tagname):
   return summoner
 
 # puuid에 해당하는 tagName 및 랭크 정보 업데이트
-def update_by_puuid(puuid, tagName=None):
-  summoner = summoner_v4.get_by_puuid(puuid, tagName=tagName)
+def update_by_puuid(puuid, tagNameEntry=None):
+  summoner = summoner_v4.get_by_puuid(puuid, tagNameEntry=tagNameEntry)
   entry = league_exp_v4.get_summoner_by_id(summoner.get("id"))
   
   update(summoner, entry, check_name=True)
@@ -98,10 +98,10 @@ def recursive_tagline_update(summoner):
                                    "puuid":{"$ne":summoner["puuid"]}})
   if matched:
     logger.info("%s와 동일한 internal tagname 소환사 확인, 업데이트", summoner["internal_tagname"])
-    tagName = summoner_v4.get_tagname_by_puuid(matched["puuid"])
-    matched["name"] = tagName["gameName"]
+    tagNameEntry = summoner_v4.get_summoner_by_puuid(matched["puuid"])
+    matched["name"] = tagNameEntry["gameName"]
     matched["internal_name"] = make_internal_name(matched["name"])
-    matched["tagLine"] = tagName["tagLine"]
+    matched["tagLine"] = tagNameEntry["tagLine"]
     matched["internal_tagname"] = f"{matched['internal_name']}#{make_tagname(matched['tagLine'])}"
     
     db_riot[col].update_one({"puuid":matched["puuid"]}, {"$set":matched})
@@ -221,6 +221,9 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False, 
     
   if check_refresh:
     summoner["updatedAt"] = datetime.now()
+  
+  if "accountId" in summoner:
+    del summoner["accountId"]
   
   asyncio.run(csmq.add_summoner(summoner))
   

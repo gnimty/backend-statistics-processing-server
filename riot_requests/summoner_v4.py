@@ -38,7 +38,7 @@ def get_by_summoner_id(summoner_id):
 
   return post_process(result)
 
-def get_by_puuid(puuid, tagName = None):
+def get_by_puuid(puuid, tagNameEntry = None):
   if not puuid:
     raise AttributeError(f"{__name__}의 인자를 잘못 넘겼습니다.")
 
@@ -48,25 +48,25 @@ def get_by_puuid(puuid, tagName = None):
   if "id" not in result:
     return None
 
-  return post_process(result, tagName=tagName)
+  return post_process(result, tagNameEntry=tagNameEntry)
   
   
 
-def post_process(summoner, tagName = None):
+def post_process(summoner, tagNameEntry = None):
   del (summoner["accountId"])  # 필요 없는 properties 제거
   
-  if tagName == None:
-    tagName = get_tagname_by_puuid(summoner["puuid"])
+  if tagNameEntry == None:
+    tagNameEntry = get_summoner_by_puuid(summoner["puuid"])
   
-  summoner["tagLine"] = tagName.get("tagLine")
-  summoner["name"] = tagName.get("gameName")
+  summoner["tagLine"] = tagNameEntry.get("tagLine")
+  summoner["name"] = tagNameEntry.get("gameName")
   
   summoner["internal_name"] = make_internal_name(summoner["name"])
   summoner["internal_tagname"] = f"{summoner['internal_name']}#{make_tagname(summoner['tagLine'])}"
   return summoner
   
 
-def get_tagname_by_puuid(puuid):
+def get_summoner_by_puuid(puuid):
   url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
   
   result = delayable_request(url)
@@ -76,7 +76,7 @@ def get_tagname_by_puuid(puuid):
   
   return result
   
-def get_tagname_by_name_and_tagline(gameName, tagLine):
+def get_summoner_by_name_and_tagline(gameName, tagLine):
   url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}"
   
   result = delayable_request(url)
