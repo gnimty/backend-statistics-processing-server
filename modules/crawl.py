@@ -158,11 +158,10 @@ def update_patch_note_summary(latest_version):
     3. 변경 내용 리스트
     '''
     
-    latest = db["version"].find_one({"version":latest_version})
-    
-    if latest and "patchNoteParsed" in latest and latest["patchNoteParsed"]:
-        return 
-    
+    # 매번 갱신
+    # if latest and "patchNoteParsed" in latest and latest["patchNoteParsed"]:
+    #     return 
+    logger.info(f"{latest_version} update_patch_note_summary 시작")
     db["patch"].delete_many({"version":latest_version})
     
     champion_map = {champion["en"].lower(): champion for champion in list(db["champion_info"].find())}
@@ -198,6 +197,18 @@ def update_patch_note_summary(latest_version):
                         skill_img = target.find_element(By.CSS_SELECTOR, "img").get_attribute("src")
                     
                     changes = target.find_element(By.XPATH,'following-sibling::ul').find_elements(By.TAG_NAME, "li")
+                    change_list = []
+                    
+                    for change in changes:
+                        try:
+                            span_element = changes[1].find_element(By.TAG_NAME, "span")
+                            span_text = span_element.text
+                            remain_text = change.text.replace(span_text, "")
+                            
+                            change_list.append(f'[{span_text}] {remain_text}')
+                        except Exception:
+                            change_list.append(change.text)
+                            pass
                     
                     patches.append({
                         "en":champion_name,
@@ -206,7 +217,7 @@ def update_patch_note_summary(latest_version):
                         "version":latest_version,
                         "target":target.text,
                         "targetImgUrl": skill_img,
-                        "changes": [change.text for change in changes]
+                        "changes": change_list
                     })
                         
             except Exception:

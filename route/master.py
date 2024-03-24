@@ -58,7 +58,7 @@ def flush_raw_data():
     "message":"raw data 전송 완료"
   }
 
-@master_route.route("/crawl/update", methods = ["POST"])
+@master_route.route("/crawl/update", methods=["POST"])
 def generate_crawl_data():
   latest_version = version.update_latest_version()
   
@@ -230,6 +230,14 @@ def test():
     result.append({"lane":lane, "data":[s for s in stats if s["teamPosition"]==lane]} )
 
   return {"results":result}
+
+@master_route.route("/crawl/patch/<version>", methods=["POST"])
+def test2(version):
+  crawl.update_patch_note_summary(version)
+  
+  return {
+    "message":"success"
+  }
 
 ## 비동기 request를 통해 slave process API 요청
 
