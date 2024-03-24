@@ -161,8 +161,12 @@ def update_patch_note_summary(latest_version):
     # 매번 갱신
     # if latest and "patchNoteParsed" in latest and latest["patchNoteParsed"]:
     #     return 
+    
+    if not db["version"].find_one({"version":latest_version}):
+        logger.error(f"{latest_version}에 해당하는 버전 정보가 존재하지 않습니다.")
+        return
+    
     logger.info(f"{latest_version} update_patch_note_summary 시작")
-    db["patch"].delete_many({"version":latest_version})
     
     champion_map = {champion["en"].lower(): champion for champion in list(db["champion_info"].find())}
     
@@ -223,7 +227,9 @@ def update_patch_note_summary(latest_version):
             except Exception:
                 break
         
-        db["patch"].insert_many(patches)
+        if patches:
+            db["patch"].delete_many({"version":latest_version})
+            db["patch"].insert_many(patches)
         db["version"].update_one({"version":latest_version}, 
                                  {"$set":{"patchNoteParsed":True}}, True)
         # 2. db["patch"]에 모두 삽입
