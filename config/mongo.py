@@ -15,7 +15,7 @@ class Mongo:
         "riot": conn[config.MONGO_RIOTDATA_DB],
         "stat": conn[config.MONGO_STATISTICS_DB]
     }
-    cls.init_index(cls.mongo_client["riot"])
+    # cls.init_index(cls.mongo_client["riot"])
 
   @classmethod
   def get_client(cls, db):
@@ -105,17 +105,17 @@ class Mongo:
         ("teamId", ASCENDING),
     ], name="teams_index")
 
-    champion_statistics_lane_index = IndexModel([
-        ("championName", ASCENDING),
-        ("plays", DESCENDING),
-        ("win_rate", DESCENDING),
-    ], name="champion_statistics_lane_index")
+    # champion_statistics_lane_index = IndexModel([
+    #     ("championName", ASCENDING),
+    #     ("plays", DESCENDING),
+    #     ("win_rate", DESCENDING),
+    # ], name="champion_statistics_lane_index")
 
-    champion_statistics_index = IndexModel([
-        ("championName", ASCENDING),
-        ("plays", DESCENDING),
-        ("win_rate", DESCENDING),
-    ], name="champion_statistics_index")
+    # champion_statistics_index = IndexModel([
+    #     ("championName", ASCENDING),
+    #     ("plays", DESCENDING),
+    #     ("win_rate", DESCENDING),
+    # ], name="champion_statistics_index")
     
     raw_index = IndexModel([
         ("collectAt", DESCENDING), 
@@ -132,9 +132,9 @@ class Mongo:
     db.summoner_matches.create_indexes([summoner_matches_index])
     db.matches.create_indexes([matches_index])
     db.participants.create_indexes([participants_index, participants_index_by_puuid])
-    db.champion_statistics_lane.create_indexes(
-        [champion_statistics_lane_index])
-    db.champion_statistics.create_indexes([champion_statistics_index])
+    # db.champion_statistics_lane.create_indexes(
+    #     [champion_statistics_lane_index])
+    # db.champion_statistics.create_indexes([champion_statistics_index])
     db.teams.create_indexes([teams_index])
     db.summoner_plays.create_indexes([summoner_plays_index])
     db.summoner_plays_flex.create_indexes([summoner_plays_flex_index])

@@ -28,7 +28,7 @@ schedule = [
       "job":collect_summoners,
       "method":"interval",
       "time":{
-        "hours":2
+        "hours":6
       }
     }
   ]
