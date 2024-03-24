@@ -205,7 +205,7 @@ def update_patch_note_summary(latest_version):
                     
                     for change in changes:
                         try:
-                            span_element = changes[1].find_element(By.TAG_NAME, "span")
+                            span_element = change.find_element(By.TAG_NAME, "span")
                             span_text = span_element.text
                             remain_text = change.text.replace(span_text, "")
                             
