@@ -76,8 +76,8 @@ class CustomMatchThreadTask():
             # 2번 쓰레드 작업 수행
             match.update_match(match_id, collect=True)
         except queue.Empty as e:
-            logger.info("match id queue가 비어 있으므로 5초 동안 유휴합니다.")
-            time.sleep(5)
+            # logger.info("match id queue가 비어 있으므로 5초 동안 유휴합니다.")
+            time.sleep(10)
             continue
         except Exception as e:
             logger.info("match id = %s에 해당하는 전적 정보 업데이트를 실패했습니다.", match_id)

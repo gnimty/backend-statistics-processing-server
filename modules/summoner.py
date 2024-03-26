@@ -225,6 +225,8 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False, 
     # DB에 동일한 internal tagname이 존재한다면 해당 소환사 업데이트
     recursive_tagline_update(summoner)
 
+  if not summoner.get("updatedAt"):
+    summoner["updatedAt"] = datetime.now()
   # history list 존재하면 갖다 붙이고 없으면 새로 생성
   for queue in ["RANK_SOLO_5x5", "RANK_FLEX_SR"]:
     suffix= "" if queue=="RANK_SOLO_5x5" else "_flex"
