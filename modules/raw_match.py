@@ -176,6 +176,25 @@ class RawMatch():
           "summoner1Casts": participant["summoner1Casts"],
           "summoner2Casts": participant["summoner2Casts"],
           
+          # added
+          "baronKills": participant["baronKills"], #long
+          "dragonKills": participant["dragonKills"], #long
+          "inhibitorKills": participant["inhibitorKills"], #long
+          "inhibitorTakedowns": participant["inhibitorTakedowns"], #long
+          "inhibitorsLost": participant["inhibitorsLost"], #long
+          "turretKills": participant["turretKills"], #long
+          "turretsLost": participant["turretsLost"], #long
+          "doubleKills": participant["doubleKills"], #long
+          "tripleKills": participant["tripleKills"], #long
+          "quadraKills": participant["quadraKills"], #long
+          "pentaKills": participant["pentaKills"], #long
+          "nexusKills": participant["nexusKills"], #long
+          "nexusLost": participant["nexusLost"], #long
+          "nexusTakedowns": participant["nexusTakedowns"],#long
+          "neutralMinionsKilled": participant["neutralMinionsKilled"],
+          "wardsKilled": participant["wardsKilled"],
+          "wardsPlaced": participant["wardsPlaced"],
+          
           ##################### processed_timeline #####################
           "skillTree":processed_timeline["skillBuild"],
           "itemStart": item_starts,
@@ -193,18 +212,34 @@ class RawMatch():
           "totalEffectiveDamageDealtToChampions": totalEffectiveDamageDealtToChampionsDict[participantId]
         }
       if "challenges" in participant:
-        # if "controlWardTimeCoverageInRiverOrEnemyHalf" not in participant["challenges"]:
-        #   pass
-        added_participants["controlWardTimeCoverageInRiverOrEnemyHalf"] = participant["challenges"].get("controlWardTimeCoverageInRiverOrEnemyHalf")
-        added_participants["damageTakenOnTeamPercentage"] = participant["challenges"].get("damageTakenOnTeamPercentage")
-        added_participants["teamDamagePercentage"] = participant["challenges"].get("teamDamagePercentage")
-        added_participants["enemyChampionImmobilizations"] = participant["challenges"].get("enemyChampionImmobilizations")
-        added_participants["immobilizeAndKillWithAlly"] = participant["challenges"].get("immobilizeAndKillWithAlly")
-        added_participants["initialBuffCount"] = participant["challenges"].get("initialBuffCount")
-        added_participants["initialCrabCount"] = participant["challenges"].get("initialCrabCount")
-        added_participants["saveAllyFromDeath"] = participant["challenges"].get("saveAllyFromDeath")
-        added_participants["soloKills"] = participant["challenges"].get("soloKills")
-        added_participants["wardTakedowns"] = participant["challenges"].get("wardTakedowns")
+        
+        challenge = participant["challenges"]
+        
+        added_participants["controlWardTimeCoverageInRiverOrEnemyHalf"] = challenge.get("controlWardTimeCoverageInRiverOrEnemyHalf")
+        added_participants["damageTakenOnTeamPercentage"] = challenge.get("damageTakenOnTeamPercentage")
+        added_participants["teamDamagePercentage"] = challenge.get("teamDamagePercentage")
+        added_participants["enemyChampionImmobilizations"] = challenge.get("enemyChampionImmobilizations")
+        added_participants["immobilizeAndKillWithAlly"] = challenge.get("immobilizeAndKillWithAlly")
+        added_participants["initialBuffCount"] = challenge.get("initialBuffCount")
+        added_participants["initialCrabCount"] = challenge.get("initialCrabCount")
+        added_participants["saveAllyFromDeath"] = challenge.get("saveAllyFromDeath")
+        added_participants["soloKills"] = challenge.get("soloKills")
+        added_participants["wardTakedowns"] = challenge.get("wardTakedowns")
+        
+        # added
+        added_participants["baronTakedowns"] = challenge.get("baronTakedowns")
+        added_participants["soloBaronKills"] = challenge.get("soloBaronKills")
+        added_participants["teamBaronKills"] = challenge.get("teamBaronKills")
+        added_participants["dragonTakedowns"] = challenge.get("dragonTakedowns")
+        added_participants["buffsStolen"] = challenge.get("buffsStolen")
+        added_participants["initialBuffCount"] = challenge.get("initialBuffCount")
+        added_participants["initialCrabCount"] = challenge.get("initialCrabCount")
+        added_participants["teamElderDragonKills"] = challenge.get("teamElderDragonKills")
+        added_participants["moreEnemyJungleThanOpponent"] = challenge.get("moreEnemyJungleThanOpponent") #float
+        added_participants["takedownsInEnemyFountain"] = challenge.get("takedownsInEnemyFountain")
+        added_participants["teamRiftHeraldKills"] = challenge.get("teamRiftHeraldKills")
+        added_participants["turretTakedowns"] = challenge.get("turretTakedowns")
+        added_participants["alliedJungleMonsterKills"] = challenge.get("alliedJungleMonsterKills")
         
       
       self.participants.append(added_participants)
