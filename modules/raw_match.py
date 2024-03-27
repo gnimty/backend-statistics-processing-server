@@ -264,9 +264,7 @@ class RawMatch():
           logger.info("queue %s page %d", queue, page)
           result = list(cls.raw_col.find({
             "collectAt":{"$lte":current_date}, 
-            "queueId":queueId, 
-            "metadata.tier":{"$in":["emerald", "platinum", "master", "diamond"]}
-            }, {"_id":0}).skip(page*scale).limit(scale))
+            "queueId":queueId, }, {"_id":0}).skip(page*scale).limit(scale))
           
           if len(result)==0:
             break
