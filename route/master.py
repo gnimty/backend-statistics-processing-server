@@ -248,7 +248,8 @@ schedule = [
       "job":flush_raw_data,
       "method":"cron",
       "time":{
-        "hour":0
+        "hour":0,
+        "minute":5
       }
     },
     # [MATCH_BATCH_HOUR]시간마다 전적정보 배치
