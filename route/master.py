@@ -110,18 +110,7 @@ def update_season_starts():
   except Exception:
     return {
         "message":"시즌 정보 업데이트에 실패했습니다."
-      }
-  
-  # try:
-  #   startAt = data["startAt"]
-  #   # season = data["season"]
-  #   seasonName = data["seasonName"]
-  #   season.update_season(startAt, seasonName)
-    
-  # except Exception:
-  #   return {
-  #       "message":"잘못된 날짜 정보입니다."
-  #     }
+    }
     
   return {
     "message":"시즌 정보 갱신 완료"

@@ -217,13 +217,8 @@ def update(summoner, summoner_brief, check_name = False, check_refresh = False, 
   if not summoner_brief:
     summoner_brief = dict()
   
-  if not check_name: # tagLine 갱신을 거치지 않은 데이터일 경우 DB 업데이트에 반영하지 않음
-    del summoner["name"]
-    del summoner["internal_name"]
-    del summoner["internal_tagname"]
-  else:
-    # DB에 동일한 internal tagname이 존재한다면 해당 소환사 업데이트
-    recursive_tagline_update(summoner)
+  # DB에 동일한 internal tagname이 존재한다면 해당 소환사 업데이트
+  recursive_tagline_update(summoner)
 
   if not summoner.get("updatedAt"):
     summoner["updatedAt"] = datetime.now()

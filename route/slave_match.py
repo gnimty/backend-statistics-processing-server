@@ -41,7 +41,7 @@ schedule = [
         "job":stop_collect_match,
         "method":"cron",
         "time":{
-            "hour": 12,
+            "hour": 23,
             "minute": 55,
         }
     },
