@@ -45,7 +45,7 @@ class CustomSummonerMQ:
   
   #1. 단일 갱신
   async def renew_one(self, summoner) -> bool:
-    
+
     self.patch_summoners([SummonerUpdateEntry(summoner)])
     logger.info("community에서 업데이트 완료")
     
@@ -66,15 +66,14 @@ class CustomSummonerMQ:
       "summonerUpdates": [summoner.data for summoner in summoners]
     }
     
-    try:
-      response = requests.patch(url, json=data, timeout=5)
-
+    # try:
+      # response = requests.patch(url, json=data, timeout=5)
+    
       # if response.status_code != 200:  #실패 시 
       #   logger.error("Community API 호출에 실패했습니다. status code = %s", response.status_code)
       # else:
       #   logger.info(response.json())
-    except Exception as e:
+    # except Exception as e:
       # logger.error("Community API 호출에 실패했습니다.")
-      pass
 
 csmq = CustomSummonerMQ()
