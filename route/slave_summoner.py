@@ -1,35 +1,50 @@
 from flask import Blueprint
-import os
-# import dotenv
-# dotenv.load_dotenv()
 from flask_request_validator import *  # parameter validate
-from modules import league_entries
 import log
-
+from thread_task_summoner import CustomSummonerTask
 from utils.summoner_name import *
-
 
 logger = log.get_logger()
 
 slave_summoner_route = Blueprint('slave_summoner_route', __name__)
 
+@slave_summoner_route.route("/status")
+def get_status():
+    return {  
+        "alive_threads": f"{CustomSummonerTask.alive_thread_len()}개",
+    }
+
 @slave_summoner_route.route("/collect", methods=["POST"])
 def collect_summoners():
-  league_entries.update_all_summoners(collect=True)
+  CustomSummonerTask.start(collect=False)
+
+  return {
+    "message":"success"
+  }
+  
+@slave_summoner_route.route("/collect/stop", methods=["POST"])
+def stop_collect_summoners():
+  CustomSummonerTask.stop()
 
   return {
     "message":"success"
   }
 
-
 schedule = [
-    # 수집한 raw data 압축하여 cloud로 전송
     {
       "job":collect_summoners,
-      "method":"interval",
+      "method":"cron",
       "time":{
-        "hours":6
+        "hour":'3-21/3'
       }
-    }
+    },
+    {
+      "job":stop_collect_summoners,
+      "method":"cron",
+      "time":{
+          "hour": 12,
+          "minute": 55,
+      }
+    },
   ]
 

@@ -1,5 +1,5 @@
 from flask import Blueprint
-from thread_task import CustomMatchThreadTask
+from thread_task_match import CustomMatchThreadTask
 from config.appconfig import current_config as config
 
 
@@ -30,19 +30,18 @@ def stop_collect_match():
     }
     
 schedule = [
-    # 수집한 raw data 압축하여 cloud로 전송
     {
       "job":collect_match,
       "method":"cron",
       "time":{
-        "hour":'1/2'
+        "hour":'2-22/2'
       }
     },
     {
         "job":stop_collect_match,
         "method":"cron",
         "time":{
-            "hour": 23,
+            "hour": 12,
             "minute": 55,
         }
     },

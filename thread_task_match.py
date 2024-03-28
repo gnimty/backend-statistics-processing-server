@@ -3,7 +3,7 @@ import queue
 import time
 import random
 
-from modules import match, summoner_matches, summoner, raw_match
+from modules import match, summoner_matches, summoner
 from log import get_logger
 from error.custom_exception import AlreadyInTask
 from config.redis import Redis
@@ -16,14 +16,10 @@ class CustomMatchThreadTask():
   # 공유 자원
   match_ids_queue = queue.Queue()
 
-  # set_lock = raw_match.RawMatch.set_lock
-  # match_id_set = raw_match.RawMatch.match_ids_set
   exit_event = threading.Event()
     
   # 쓰레드 생성
   threads = []
-  # 해당 flag가 True면 thread1이 더 이상 동작하지 않음
-  thread1_flag  = False
   
   @classmethod
   def await_match_ids_len(cls):
@@ -70,7 +66,7 @@ class CustomMatchThreadTask():
   def thread_2(cls):
     while True:
         try:
-            if cls.match_ids_queue.empty() and cls.thread1_flag:
+            if cls.match_ids_queue.empty() and cls.exit_event.is_set():
               return
             match_id = cls.match_ids_queue.get(block=False)
             # 2번 쓰레드 작업 수행
@@ -88,7 +84,7 @@ class CustomMatchThreadTask():
       raise AlreadyInTask("이미 소환사 전적 정보를 수집 중입니다.")
     
     cls.in_task = True
-    # puuids = summoner.find_all_puuids()
+    
     puuids = summoner.find_all_puuids_with_cond({"mmr":{"$gte":1600}})
     if skip:
         puuids = puuids[len(puuids)//2:]
@@ -98,9 +94,7 @@ class CustomMatchThreadTask():
     # 균일한 티어대 정보 수집을 위하여 shuffle
     random.shuffle(puuids)
     
-    # 모든 puuid를 탐색하면서 해당 소환사가 진행한 모든 전적 정보 업데이트
-    # 10개 구간으로 나누어 진행
-    
+    # 모든 puuid를 탐색하면서 해당 소환사가 진행한 모든 전적 정보 업데이트,10개 구간으로 나누어 진행
     interval = len(puuids)//5
     
     thread1_list=[]
@@ -129,18 +123,15 @@ class CustomMatchThreadTask():
     for thread in thread1_list:
       thread.join()
     
-    cls.thread1_flag = True
-    
     for thread in thread2_list:
       thread.join()
 
     del cls.threads[:]
     logger.info("모든 쓰레드들을 종료합니다. ")
     cls.in_task = False
-    cls.thread1_flag = False
     cls.exit_event.clear()
   
   @classmethod
   def stop(cls):
-    cls.exit_event.set()
-    cls.thread1_flag = True
+    if cls.in_task:
+      cls.exit_event.set()
