@@ -17,11 +17,12 @@ jobs:
           echo "${{ secrets.DEV_ENV }}" > .env
           touch mongo.env
           echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
+          mkdir credentials
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
-        with:
-          platforms: 'linux/arm64, linux/arm64/v8'
+        # with:
+        #   platforms: 'linux/arm64, linux/arm64/v8'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -36,7 +37,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: solmin2/statistics-processing-server:latest
+          tags: ${{ secrets.DEV_DOCKER_REPO }}
+          platforms: linux/arm64/v8
 
       ## docker-compose.yml 서버에 이동
       - name: docker-compose.yml 파일 이동
@@ -60,8 +62,8 @@ jobs:
             cd ${{ secrets.DIR }}
             sudo echo "${{ secrets.DEV_ENV }}" > .env
             sudo echo "${{ secrets.DEV_MONGO_ENV }}" > mongo.env
-            sudo docker rm -f $(docker ps -qa)
-            sudo docker pull solmin2/statistics-processing-server:latest
-            sudo docker-compose -f docker-compose-dev.yml up -d
-
-          # sudo docker-compose -f docker-compose-dev.yml down -v
+            sudo echo "${{ secrets.DEV_COMPOSE_ENV }}" > docker-compose.env
+            sudo echo "${{ secrets.GOOGLE_CREDENTIAL }}" > ./credentials/google_credential.json
+            sudo docker-compose -f docker-compose-dev.yml --env-file docker-compose.env down -v
+            sudo docker pull ${{ secrets.DEV_DOCKER_REPO }}
+            sudo docker-compose -f docker-compose-dev.yml --env-file docker-compose.env up -d --build

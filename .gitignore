@@ -35,3 +35,18 @@ logs/*
 web/
 web/static/
 web/static/riot.txt
+
+# chrome driver
+chromedriver-mac-arm64/
+
+# redis
+/dev-redis-data
+
+# GCS
+google_credential.json
+/raw
+/raw.*
+/credentials
+/credentials/*
+# Parquet
+*.parquet

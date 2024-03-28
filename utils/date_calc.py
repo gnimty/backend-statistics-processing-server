@@ -1,5 +1,7 @@
 import datetime
 import time
+from datetime import timedelta
+
 def lastModifiedFromNow(updated_at, utc=True):
   """현재 시간과 최종 수정일간의 날짜 차이를 계산\n
   [중요!!] UTC 시간을 기준으로 계산이 기본값
@@ -22,7 +24,16 @@ def lastModifiedFromNow(updated_at, utc=True):
 
 def timeStampToDateTime(timestamp):
   return datetime.datetime.fromtimestamp(int(timestamp[:10]))
+
+def get_epoch_by_datetime(date:datetime.datetime):
+  return int(date.timestamp())
   
-  
-# if __name__=="__main__":
-#   print(timeStampToDateTime("1687105442"))
+# YYYYMMDDHHMMSS
+def format_to_datetime(format_date):
+  return datetime.datetime.strptime(format_date, "%Y%m%d%H%M%S")
+
+
+if __name__=="__main__":
+  now = datetime.datetime.now()
+  print(get_epoch_by_datetime(now))
+  print(get_epoch_by_datetime(now - timedelta(days=14)))

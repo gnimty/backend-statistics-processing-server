@@ -1,6 +1,12 @@
 # Statistics Processing Server
 
-* 7월 3일 : 소환사 랭크 history를 포함한 배치 데이터 생성 작업 완료
 
-* 남은 작업 <br>
-test
+* local selenium starts
+docker run -p 4445:4444 seleniarm/standalone-chromium 
+
+
+
+# GCP 이관 시
+
+- 1. secret.GOOGLE_CREDENTIAL 수정 (모든 큰따옴표 앞에 escape 문자 추가)
+- 2. secret.DEV_ENV 수정 (COMMUNITY_HOST, GOOGLE_BUCKET_NAME)

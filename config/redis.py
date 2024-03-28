@@ -1,31 +1,40 @@
-import redis, json
+from redis import Redis as RedisClient
+from redis.exceptions import BusyLoadingError
+from config.appconfig import current_config as config
+import threading
+from log import get_logger
+import time
 
-class RedisClient():
-  r = object()
-  key = "API_LIMIT"
-  
-  @staticmethod
-  def init(**redis_kwargs):
-    RedisClient.r = redis.Redis(**redis_kwargs)
-    RedisClient.setInitLimit()
-    
-  @staticmethod
-  def setInitLimit(): 
-    RedisClient.r.set(RedisClient.key, 100)
-    
-  @staticmethod
-  def dec_limit():  # rate limit 값 줄이기
-    if RedisClient.isAvailable(0):
-      RedisClient.r.set(RedisClient.key, RedisClient.get()-1)
-      return f"{RedisClient.get()}개 남음"
-    return "API LIMIT 초과"
-  
-  @staticmethod
-  def get():  # 꺼낼 데이터 조회
-    return int(RedisClient.r.get(RedisClient.key))
-  
-  @staticmethod
-  def isAvailable(limit):
-    return RedisClient.get()>limit
+logger = get_logger()
 
-rd = object()
+class Redis:
+  redis_client = None
+  
+  lock = threading.Lock()
+  @classmethod
+  def set_client(cls) -> None:
+    cls.redis_client = RedisClient(
+        host=config.REDIS_HOST,
+        port=config.REDIS_PORT,
+        charset="utf-8",
+        decode_responses=True
+    )
+    
+  @classmethod
+  def get_client(cls) -> RedisClient:
+    return cls.redis_client
+  
+  @classmethod
+  def add_to_set(cls, match_id):
+    with cls.lock:
+      # 처리된 raw data의 id를 set에 추가
+      cls.redis_client.sadd('processed_ids', match_id)
+      
+        
+  @classmethod        
+  def check_processed(cls, match_id):
+    with cls.lock:
+      return cls.redis_client.sismember('processed_ids', match_id)
+              
+            
+

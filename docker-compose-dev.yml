@@ -9,23 +9,117 @@ services:
     #   dockerfile: Dockerfile # dockerfile : 도커파일 경로
     restart: unless-stopped
     ports:
-      - 5000:5000
+      - ${MASTER_FLASK_RUN_PORT}:5000
     depends_on:
       - mongodb
+      - redis
+      - selenium
+      - slave-summoner-server
+      - slave-match-server
+      - slave-match-server-2
     env_file:
       - .env
     environment:
       - TZ=Asia/Seoul
+      - PROCESS=master
+      - FLASK_RUN_PORT=${MASTER_FLASK_RUN_PORT}
     volumes:  
-      - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+      - ./raw:/app/raw
+      # - ./dev-logs:/app/logs # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+  slave-summoner-server:
+    image: solmin2/statistics-processing-server:latest
+    container_name: slave-summoner-server
+    restart: unless-stopped
+    ports:
+      - ${SLAVE_SUMMONER_FLASK_RUN_PORT}:5000
+    depends_on:
+      - mongodb
+      - redis
+      - selenium
+      - slave-match-server
+      - slave-match-server-2
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+      - PROCESS=slave_summoner
+      - FLASK_RUN_PORT=${SLAVE_SUMMONER_FLASK_RUN_PORT}
+    volumes:  
+      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+
+  slave-match-server:
+    image: solmin2/statistics-processing-server:latest
+    container_name: slave-match-server
+    restart: unless-stopped
+    ports:
+      - ${SLAVE_MATCH_FLASK_RUN_PORT}:5000
+    depends_on:
+      - mongodb
+      - redis
+      - selenium
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+      - PROCESS=slave_match
+      - FLASK_RUN_PORT=${SLAVE_MATCH_FLASK_RUN_PORT}
+    volumes:  
+      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+
+  slave-match-server-2:
+    image: solmin2/statistics-processing-server:latest
+    container_name: slave-match-server-2
+    restart: unless-stopped
+    ports:
+      - ${SLAVE_MATCH_2_FLASK_RUN_PORT}:5000
+    depends_on:
+      - mongodb
+      - redis
+      - selenium
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+      - PROCESS=slave_match
+      - FLASK_RUN_PORT=${SLAVE_MATCH_2_FLASK_RUN_PORT}
+    volumes:  
+      - ./credentials:/app/credentials # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
+
   # 몽고DB
   mongodb:
     image: mongo:6.0.4
-    container_name: mongodb
+    container_name: statistics-mongodb
     restart: always
     ports:
-      - 27017:27017
+      - ${MONGO_OUTER_PORT}:27017
     volumes:  
       - ./dev-data:/data/db # 로컬 디렉토리 하위의 ./dev-data와 컨테이너 안의 /data/db를 매핑
     env_file:
       - mongo.env
+
+  redis:
+    image: arm64v8/redis
+    container_name: statistics-redis
+    ports:
+      - ${REDIS_OUTER_PORT}:6379
+    volumes:
+      - ./dev-redis-data:/data
+
+  # standalone selenium
+  selenium:
+    image: seleniarm/standalone-chromium
+    environment:
+      NODE_MAX_SESSION: 5
+    container_name: selenium
+    ports:
+      - 4445:4444
+
+
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"

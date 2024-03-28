@@ -1,52 +1,11 @@
-import os
 from error.custom_exception import *
-from riot_requests.common import delayableRequest
+from riot_requests.common import delayable_request
+from utils.summoner_name import *
 
-def requestSummonerById(summonerId, limit):
-  """
-  summonerId로 Summoner 정보 가져오기\n
-  1600 requests every 1 minutes\n
-  
-  Args:
-      id (str): 소환사 ID
-  Returns:
-      Summoner: 소환사 정보
-  """
-  
-  result = requestSummoner(limit,summonerId=summonerId)
-  return result
+import log
+logger = log.get_logger()
 
-def requestSummonerByName(summonerName, limit):
-  """
-  summonerName으로 Summoner 정보 가져오기\n
-  1600 requests every 1 minutes\n
-  
-  Args:
-      summonerName (str): 소환사이름
-  Returns:
-      Summoner : 소환사 정보
-  """
-  result = requestSummoner(limit, summonerName=summonerName)
-  
-  return result
-
-def requestBySummonerPuuid(puuid, limit):
-  
-
-  if not puuid:
-    raise AttributeError(f"{__name__}의 인자를 잘못 넘겼습니다.")
-
-  url = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
-  result = delayableRequest(url, 20, limit)
-  
-  if "id" not in result:
-    return None
-  
-  del(result["accountId"]) # 필요 없는 properties 제거
-  
-  return result
-  
-def requestSummoner(limit, summonerName=None, summonerId=None):
+def get_by_summoner_id(summoner_id):
   """summonerName 또는 summoner Id로 Summoner 정보 가져오기
   둘 중 하나의 인자라도 주어져야 하며 summonerName이 주어지면 summonerId는 무시됨
   
@@ -70,23 +29,60 @@ def requestSummoner(limit, summonerName=None, summonerId=None):
       } : 소환사 정보
   """
 
-  url = "https://kr.api.riotgames.com/lol/summoner/v4/summoners/"
+  url = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
 
-  if summonerName: # 소환사 이름으로 조회
-    url = url+f"by-name/{summonerName}"
-  elif summonerId: # 소환사 아이디로 조회
-    url = url+summonerId
-  else:
-    raise AttributeError(f"{__name__}의 인자를 잘못 넘겼습니다.")
+  result = delayable_request(url)
 
-  result = delayableRequest(url, 20, limit)
-  
   if "id" not in result:
     return None
+
+  return post_process(result)
+
+def get_by_puuid(puuid, tagNameEntry = None):
+  if not puuid:
+    raise AttributeError(f"{__name__}의 인자를 잘못 넘겼습니다.")
+
+  url = f"https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}"
+  result = delayable_request(url)
+
+  if "id" not in result:
+    return None
+
+  return post_process(result, tagNameEntry=tagNameEntry)
   
-  del(result["accountId"]) # 필요 없는 properties 제거
+  
+
+def post_process(summoner, tagNameEntry = None):
+  del (summoner["accountId"])  # 필요 없는 properties 제거
+  
+  if tagNameEntry == None:
+    tagNameEntry = get_summoner_by_puuid(summoner["puuid"])
+  
+  summoner["tagLine"] = tagNameEntry.get("tagLine")
+  summoner["name"] = tagNameEntry.get("gameName")
+  
+  summoner["internal_name"] = make_internal_name(summoner["name"])
+  summoner["internal_tagname"] = f"{summoner['internal_name']}#{make_tagname(summoner['tagLine'])}"
+  return summoner
+  
+
+def get_summoner_by_puuid(puuid):
+  url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}"
+  
+  result = delayable_request(url)
+  
+  if "tagLine" not in result:
+    return None
   
   return result
-
-
-
+  
+def get_summoner_by_name_and_tagline(gameName, tagLine):
+  url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}"
+  
+  result = delayable_request(url)
+  
+  if "tagLine" not in result:
+    return None
+  
+  return result
+  

@@ -8,3 +8,13 @@ flask_request_validator
 apscheduler
 datetime
 redis
+selenium
+Werkzeug==0.16.0
+markupsafe==2.0.1
+asyncio
+google-cloud-storage
+pandas
+fastparquet
+pyarrow
+psutil
+httpx

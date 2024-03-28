@@ -1,159 +1,72 @@
-import json
-import os, dotenv
-from bson import json_util
+import os
 from scheduler import start_schedule  # 스케줄러 로드
-
 from error.custom_exception import *  # custom 예외
 from error.error_handler import error_handle  # flask에 에러핸들러 등록
 from flask_request_validator import *  # parameter validate
-from flask import Flask, jsonify, request, url_for
+from flask import Flask
 
-from config.mongo import mongoClient
-from utils.summoner_name import makeInternalName
+from config.appconfig import current_config  # 최초 환경변수 파일 로드
+from config.mongo import Mongo
+from config.redis import Redis
+from utils.summoner_name import *
 
-from scheduler import start_schedule
 
-# dotenv.load_dotenv(dotenv_path=".env")
-env = os.getenv("APP_ENV") or "local"
-from config.config import config  # 최초 환경변수 파일 로드
-import logging
 
 app = Flask(__name__)
-app.config.from_object(config[env])  # 기본 앱 환경 가져오기
-
-log_dir = './logs'  # 로그 남길 디렉토리 (없으면 자동으로 생성)
-if not os.path.exists(log_dir):
-    os.mkdir(log_dir)
-from utils import initialize_logger
-
-logger = logging.getLogger("app")  # 로거
+env = os.getenv("APP_ENV") or "local"
+app.config.from_object(current_config)  # 기본 앱 환경 가져오기
+process = os.getenv("PROCESS") or "master"
+import log
+logger = log.get_logger()  # 로거
 
 error_handle(app)  # app 공통 에러 핸들러 추가
 
-logger.info("%s 환경에서 실행",env)
+logger.info("%s 환경에서 실행, PROCESS = %s", env, process)
 
-# Mongo Connection
-db_riot = mongoClient(app, app.config["MONGO_RIOTDATA_DB"])  # pymongo connection
-db_stat = mongoClient(app, app.config["MONGO_STATISTICS_DB"])  # pymongo connection
+Mongo.set_client()
+Redis.set_client()
 
-# Redis Connection
-# RedisClient.init(
-#       host = app.config.get("REDIS_HOST") or "localhost", 
-#       port = int(app.config.get("REDIS_PORT")) or 6379)
+from modules import match
+from threading import Thread
 
-from modules import summoner, league_entries, match, summoner_matches
+@app.route("/raw/<match_id>", methods=["GET"])
+def get_raw_match(match_id):
+  result = match.get_raw(match_id)
+  return result
 
-@app.route('/batch', methods=["POST"])
-def leagueEntriesBatch():
-  """수동 배치돌리기
-  league_entries 가져와서 rank정보 업데이트해주기
+
+if process=="master":
+  from route import master
+  app.register_blueprint(master.master_route)
   
-  Returns:
-      updated(int) : 마스터 이상 유저 업데이트수
-  """
-  updated_summoner_count = league_entries.updateAll(db_riot, int(app.config["BATCH_LIMIT"]))
-  return {"status": "ok", "updated": updated_summoner_count}
-
-
-@app.route('/batch/match', methods=["POST"])
-def matchBatch():  # 전적정보 배치 수행
-  """수동 배치돌리기
-  소환사 정보 내에 있는 모든 소환사들의 summoner_match와 match정보를 업데이트
-  실행 당시의 summoners 안에 있는 소환사들만 업데이트해주기
+  if env!="local":
+    start_schedule(master.schedule)
   
-  Returns:
-      updated(int) : 마스터 이상 유저 업데이트수
-  """
-
-  # 1. league_entries 가져오기
-  puuids = summoner.findAllSummonerPuuid(db_riot)
-  # 2. league_entries 안의 소환사 아이디를 돌아가면서 summoner_matches를 업데이트하기
-  for puuid in puuids:
-    
-    matchIds = summoner_matches.updateAndGetTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
-    for matchId in matchIds:
-      try:
-        
-        match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
-      except Exception:
-        logger.error("matchId = {}에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
-
-  return {"status": "ok", "message": "전적 정보 배치가 완료되었습니다."}
-
-@app.route('/scheduler/summoner/start')
-def startSummonerBatchScheduler():
-  start_schedule([
-  # 2시간에 한번씩 소환사 정보 배치
-  {
-    "job":leagueEntriesBatch,
-    "method":"interval",
-    "time": {
-      "hours": app.config["SUMMONER_BATCH_HOUR"]
-    }
-  },
-  ])
-  return {"message":"scheduler started"}
-
-
-@app.route("/batch/summoner/refresh/<internal_name>", methods=["POST"] )
-def refreshSummonerInfo(internal_name):
-  summoner.summonerRequestLimit(db_riot, internal_name)
-  # 만약 internal_name 해당하는 유저 정보가 존재한다면 가져온 summonerId로 refresh
-  summonerInfo = summoner.findBySummonerName(db_riot,internal_name, app.config["BATCH_LIMIT"])
+elif process=="slave_summoner":
+  from route import slave_summoner
+  app.register_blueprint(slave_summoner.slave_summoner_route)
   
-  if not summonerInfo:
-    raise UserUpdateFailed("유저 전적 업데이트 실패")    
-    
-  # 이후 해당 소환사의 summonerId로 소환사 랭크 정보 가져오기 -> diamond 이하라면 버리기
-  entry = summoner.findSummonerRankInfoBySummonerId(summonerInfo["id"], app.config["BATCH_LIMIT"])
-  entry["queue"] = entry["tier"].lower()
-  entry["tier"] = entry["rank"]
-  del entry["rank"]
-  if entry["queue"] not in ["master", "challenger", "grandmaster"]:
-    raise UserUpdateFailed("유저 전적 업데이트 실패")    
+  Thread(target = slave_summoner.collect_summoners, name="main").start()
   
-  summoner.updateSummoner(db_riot, summonerInfo, entry)
+  if env!="local":
+    start_schedule(slave_summoner.schedule)
   
-  updateMatchesByPuuid(summonerInfo["puuid"])
+elif process=="slave_match" or process=="slave_match_2":
+  from route import slave_match
+  import time
+  app.register_blueprint(slave_match.slave_match_route)
   
-  return {"message":"업데이트 완료"}
+  time.sleep(10)
+  Thread(target = slave_match.collect_match, name="main").start()
 
-
-
-
-
-def updateMatchesByPuuid(puuid):
-  matchIds = summoner_matches.updateAndGetTotalMatchIds(db_riot, app.config["BATCH_LIMIT"], puuid)
-  for matchId in matchIds:
-    try:
-      
-      match.updateMatch(db_riot, db_stat, matchId, app.config["BATCH_LIMIT"])
-    except Exception:
-      logger.error("matchId = {}에 해당하는 전적 정보를 불러오는 데 실패했습니다.", matchId)
-
-# if env!="local":
-# start_schedule([
-#   # 2시간에 한번씩 소환사 정보 배치
-#   {
-#     "job":leagueEntriesBatch,
-#     "method":"cron",
-#     "time":{
-#       "minute":1
-#     }
-#   },
-# ])
-#   # 4시 정각에 돌아가도록 설정
-#   {
-#     "job":matchBatch,
-#     "method":"cron",
-#     "time":{
-#       "hour":app.config["BATCH_HOUR"]
-#     }
-#   }
-#   ])
+  if env!="local":
+    start_schedule(slave_match.schedule)
+  
 
 if __name__ == "__main__":
   app.run(
     host = app.config["FLASK_HOST"], 
-    port=app.config["FLASK_PORT"],
-    debug=bool(int(app.config["FLASK_DEBUG"])))
+    port=5000,
+    debug=bool(int(app.config["FLASK_DEBUG"])),
+    threaded=True
+  )

@@ -7,11 +7,16 @@ def start_schedule(batchList):
   schedule = BackgroundScheduler(daemon=True, timezone = 'Asia/Seoul')
   
   for batch in batchList:
-    if batch["method"]=="interval":
-      schedule.add_job(batch["job"], "interval", **batch["time"], id = batch["job"].__name__, replace_existing=False)
-    # 매일 4시에 돌아가게 변경
-    elif batch["method"]=="cron":
-      schedule.add_job(batch["job"], "cron", **batch["time"], id = batch["job"].__name__, replace_existing=False)
+    func, method, args, id = \
+    batch.get("job"), batch.get("method"), batch.get("time"), batch.get('id')
+    
+    schedule.add_job(
+      func, 
+      method, 
+      **args, 
+      id = id or func.__name__, 
+      replace_existing = False # 기존 id (함수명)과 똑같은 스케줄이 시작되면 이를 무시
+    )
   
   schedule.start()
     
